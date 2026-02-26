@@ -47,6 +47,19 @@
   }
   .filter-btn:hover { border-color: #fdb813; color: #222b54; }
   .filter-btn.active { background: #fdb813; border-color: #fdb813; color: #222b54; font-weight: 700; }
+  .filter-select {
+    background: transparent;
+    border: 1.5px solid #ccc;
+    color: #555;
+    border-radius: 14px;
+    padding: 4px 13px;
+    font-size: 0.71rem;
+    cursor: pointer;
+    font-family: 'Lato', sans-serif;
+    transition: all 0.15s;
+  }
+  .filter-select:focus { outline: none; border-color: #fdb813; }
+  .filter-select:hover { border-color: #fdb813; color: #222b54; }
 
   #search-wrap {
     margin-left: auto;
@@ -217,6 +230,17 @@
     <button class="filter-btn" data-filter="cohort" data-value="5">5</button>
     <button class="filter-btn" data-filter="cohort" data-value="6">6</button>
   </div>
+  <div class="filter-group">
+    <span class="filter-label">State:</span>
+    <select id="state-filter" class="filter-select">
+      <option value="all">All</option>
+      <option value="KY">KY</option>
+      <option value="IL">IL</option>
+      <option value="MO">MO</option>
+      <option value="IN">IN</option>
+      <option value="OH">OH</option>
+    </select>
+  </div>
   <div id="search-wrap">
     <input type="text" id="search-box" placeholder="Search name, city, org…">
     <button id="search-clear" title="Clear search">✕</button>
@@ -312,10 +336,13 @@ function rowToTrainer(row, idx) {
   const name = ((row['Name']||'').trim()+' '+(row['Last Name']||'').trim()).trim();
   const cohort = (row['Cohort']||row['Cohort ']||'').trim();
   const geo = geoForTrainer((row['ADDRESS']||'').trim(), cohort, idx);
-  // Get org - explicitly exclude phone numbers
-  const orgRaw = (row['Organization']||'').trim();
-  const org = /^[\d\s\(\)\-\+\.x]{7,}$/.test(orgRaw) ? '' : orgRaw;
-  // Get email - explicitly exclude phone numbers  
+  // Find org - try all likely column names, skip phone numbers and dates
+  const isPhoneOrDate = v => /^[\d\s\(\)\-\+\.x]{7,}$/.test(v) || /^\w+ \d+, \d{4}$/.test(v) || /^\d{4}-\d{2}-\d{2}/.test(v);
+  let org = '';
+  for (const key of ['Organization', 'Org', 'organization']) {
+    const val = (row[key]||'').trim();
+    if (val && !isPhoneOrDate(val)) { org = val; break; }
+  }
   const emailRaw = (row['Email address']||'').trim();
   const email = emailRaw.includes('@') ? emailRaw : '';
   return { id:idx, name, email, cohort, org, status:(row['Certification status']||'').trim(), ...geo };
@@ -355,7 +382,7 @@ loadCSV()
   });
 
 
-let filters = {status:'all', cohort:'all', search:''};
+let filters = {status:'all', cohort:'all', state:'all', search:''};
 let selectedId = null;
 let markers = {};
 
@@ -399,7 +426,7 @@ function getFiltered() {
     if (filters.status === 'not-active'  && !isNotActive(t))      return false;
     if (filters.status === 'Full'        && t.status !== 'Full')  return false;
     if (filters.status === 'Provisional' && t.status !== 'Provisional') return false;
-    if (filters.search) {
+    if (filters.state !== 'all' && t.state !== filters.state) return false;
       const q = filters.search.toLowerCase();
       if (![t.name, t.city, t.org, t.state].some(f => f.toLowerCase().includes(q))) return false;
     }
@@ -480,6 +507,12 @@ clearBtn.addEventListener('click', () => {
   filters.search = '';
   clearBtn.style.display = 'none';
   searchBox.focus();
+  render();
+});
+
+// State filter dropdown
+document.getElementById('state-filter').addEventListener('change', e => {
+  filters.state = e.target.value;
   render();
 });
 
