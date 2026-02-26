@@ -290,6 +290,14 @@ const CITY_COORDS = {
   'Bloomington_IL':[40.4842,-88.9937],'Normal_IL':[40.5142,-88.9906],
 };
 
+function formatPhone(p) {
+  if (!p) return '';
+  const digits = p.replace(/\D/g, '');
+  if (digits.length === 10) return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
+  if (digits.length === 11 && digits[0] === '1') return `${digits.slice(1,4)}-${digits.slice(4,7)}-${digits.slice(7)}`;
+  return p; // return original if can't format
+}
+
 function isPhone(s) {
   return /^[\d\s\(\)\-\+\.]{7,}$/.test(s.trim());
 }
@@ -345,7 +353,7 @@ function rowToTrainer(row, idx) {
   }
   const emailRaw = (row['Email address']||'').trim();
   const email = emailRaw.includes('@') ? emailRaw : '';
-  const phone = (row['Phone']||'').trim();
+  const phone = formatPhone((row['Phone']||'').trim());
   return { id:idx, name, email, phone, cohort, org, status:(row['Certification status']||'').trim(), ...geo };
 }
 
@@ -430,7 +438,7 @@ const FALLBACK = [
   {id:76, name:"Dana Wrinkle", email:"dwrinkle@childwatchcac.org", phone:"", cohort:"6", org:"Child Watch Counseling and Advocacy Center", city:"Benton", state:"KY", lat:36.8818, lng:-88.3583, status:"Provisional"},
 ];
 
-let trainers = [...FALLBACK];
+let trainers = FALLBACK.map(t => ({...t, phone: formatPhone(t.phone)}));
 
 // Then silently try to fetch fresh data in the background
 const SHEET_ID = '1cf21cfRbpjj1JR3ddJhtpxGCC5CpnhssoZ3376k258Q';
@@ -561,7 +569,7 @@ function render() {
       <div class="tc-name">${t.name}</div>
       <div class="tc-location">${t.city}, ${t.state}</div>
       ${t.org ? `<div class="tc-org">${t.org}</div>` : ''}
-      ${t.phone ? `<div class="tc-org">${t.phone}</div>` : ''}
+      ${t.phone ? `<div class="tc-org" style="color:#888;">${t.phone}</div>` : ''}
       <div class="tc-badges">
         <span class="badge badge-cohort">Cohort ${t.cohort}</span>
         ${statusBadge(t.status)}
