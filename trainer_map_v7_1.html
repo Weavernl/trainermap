@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support Over Silence for KIDS Certified Trainers Network</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Lato', 'Segoe UI', Arial, sans-serif; background: #f5f0e6; color: #222b54; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  #header {
+    background: white;
+    color: #222b54;
+    padding: 0 22px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  #header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; color: #222b54; }
+
+  #controls {
+    background: white;
+    padding: 9px 20px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    border-bottom: 2px solid #e0dbce;
+  }
+  .filter-group { display: flex; gap: 5px; align-items: center; }
+  .filter-label { color: #888; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-right: 3px; }
+  .filter-btn {
+    background: transparent;
+    border: 1.5px solid #ccc;
+    color: #555;
+    border-radius: 14px;
+    padding: 4px 13px;
+    font-size: 0.71rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: #fdb813; color: #222b54; }
+  .filter-btn.active { background: #fdb813; border-color: #fdb813; color: #222b54; font-weight: 700; }
+
+  #search-wrap {
+    margin-left: auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  #search-box {
+    background: #f5f5f5;
+    border: 1.5px solid #ccc;
+    border-radius: 14px;
+    padding: 4px 30px 4px 14px;
+    color: #222b54;
+    font-size: 0.72rem;
+    width: 195px;
+  }
+  #search-box::placeholder { color: #aaa; }
+  #search-box:focus { outline: none; border-color: #fdb813; background: white; }
+  #search-clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 2px;
+    display: none;
+  }
+  #search-clear:hover { color: #222b54; }
+
+  #main { display: flex; flex: 1; overflow: hidden; }
+  #map { flex: 1; }
+
+  #sidebar {
+    width: 260px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #ddd;
+    flex-shrink: 0;
+  }
+  #sidebar-header {
+    background: #222b54;
+    color: white;
+    padding: 8px 13px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  #sidebar-header-left { display: flex; align-items: center; gap: 6px; }
+  #trainer-count { color: #fdb813; font-size: 0.85rem; }
+
+  #print-btn {
+    background: #0ba5a5;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.15s;
+  }
+  #print-btn:hover { background: #089090; }
+
+  #trainer-list { overflow-y: auto; flex: 1; }
+
+  .trainer-card {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f2efe8;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .trainer-card:hover { background: #faf8f4; }
+  .trainer-card.selected { background: #e6f4f4; border-left: 3px solid #0ba5a5; padding-left: 9px; }
+  .tc-name { font-weight: 700; font-size: 0.81rem; color: #222b54; }
+  .tc-location { font-size: 0.7rem; color: #888; margin-top: 1px; }
+  .tc-org { font-size: 0.68rem; color: #0ba5a5; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tc-badges { display: flex; gap: 4px; margin-top: 4px; }
+  .badge { font-size: 0.61rem; padding: 1px 7px; border-radius: 10px; font-weight: 600; line-height: 1.6; }
+  .badge-cohort   { background: #ebe8f5; color: #4a3580; }
+  .badge-full     { background: #d8f0dd; color: #1a6632; }
+  .badge-prov     { background: #fef3cd; color: #7a5700; }
+  .badge-inactive { background: #e8e8ea; color: #555; }
+
+  /* popup */
+  .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 3px 16px rgba(0,0,0,0.15); padding: 0; overflow: hidden; }
+  .leaflet-popup-content { margin: 0; }
+  .popup-inner { padding: 12px 14px; }
+  .popup-name { font-weight: 800; font-size: 0.92rem; color: #222b54; margin-bottom: 6px; }
+  .popup-row { font-size: 0.77rem; margin-bottom: 3px; color: #444; line-height: 1.4; }
+  .popup-row strong { color: #222b54; }
+  .popup-row a { color: #0ba5a5; text-decoration: none; }
+  .popup-row a:hover { text-decoration: underline; }
+  .popup-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 7px; }
+  .popup-update { margin-top: 9px; padding-top: 8px; border-top: 1px solid #eee; }
+  .popup-update-link {
+    font-size: 0.74rem;
+    color: #222b54;
+    text-decoration: none;
+    font-weight: 600;
+    opacity: 0.65;
+    transition: opacity 0.15s;
+  }
+  .popup-update-link:hover { opacity: 1; text-decoration: underline; }
+
+  /* ---- Print styles ---- */
+  @media print {
+    body { overflow: visible; height: auto; }
+    #header, #controls, #map, #print-btn { display: none !important; }
+    #main { display: block; }
+    #sidebar {
+      width: 100%;
+      border: none;
+      display: block;
+    }
+    #sidebar-header {
+      background: #222b54 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+    }
+    #trainer-list { overflow: visible; }
+    .trainer-card {
+      page-break-inside: avoid;
+      border-bottom: 1px solid #ddd;
+      padding: 7px 16px;
+    }
+    .trainer-card:hover, .trainer-card.selected { background: white !important; border-left: none !important; padding-left: 16px !important; }
+    .tc-name { font-size: 0.88rem; }
+    .tc-location, .tc-org { font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>Support Over Silence for KIDS Certified Trainers Network</h1>
+</div>
+
+<div id="controls">
+  <div class="filter-group">
+    <span class="filter-label">Status:</span>
+    <button class="filter-btn active" data-filter="status" data-value="all">All</button>
+    <button class="filter-btn" data-filter="status" data-value="not-active">Not Active</button>
+    <button class="filter-btn" data-filter="status" data-value="Provisional">Provisional</button>
+    <button class="filter-btn" data-filter="status" data-value="Full">Full</button>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Cohort:</span>
+    <button class="filter-btn active" data-filter="cohort" data-value="all">All</button>
+    <button class="filter-btn" data-filter="cohort" data-value="0">0</button>
+    <button class="filter-btn" data-filter="cohort" data-value="1">1</button>
+    <button class="filter-btn" data-filter="cohort" data-value="2">2</button>
+    <button class="filter-btn" data-filter="cohort" data-value="3">3</button>
+    <button class="filter-btn" data-filter="cohort" data-value="4">4</button>
+    <button class="filter-btn" data-filter="cohort" data-value="5">5</button>
+    <button class="filter-btn" data-filter="cohort" data-value="6">6</button>
+  </div>
+  <div id="search-wrap">
+    <input type="text" id="search-box" placeholder="Search name, city, org…">
+    <button id="search-clear" title="Clear search">✕</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="map"></div>
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <div id="sidebar-header-left">
+        <span>Directory</span>
+        <span id="trainer-count">77</span>
+      </div>
+      <button id="print-btn" onclick="printDirectory()">⬇ Download / Print</button>
+    </div>
+    <div id="trainer-list"></div>
+  </div>
+</div>
+
+<script>
+// ── Live Google Sheets data source ───────────────────────────────────────────
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSwfyYk9YbcWOF131he2x50Q6bXn_Lm_kSCVgkBpBB41lKjIhGJKrqgSUZMfpXnEbl1g_fMmyf71xff/pub?gid=128211378&single=true&output=csv';
+
+const COHORT_DEFAULTS = {
+  '0': {city:'Louisville',  state:'KY', lat:38.2527, lng:-85.7585},
+  '1': {city:'Louisville',  state:'KY', lat:38.2527, lng:-85.7585},
+  '2': {city:'Louisville',  state:'KY', lat:38.2527, lng:-85.7585},
+  '3': {city:'Bloomington', state:'IL', lat:40.4842, lng:-88.9937},
+  '4': {city:'Lexington',   state:'KY', lat:38.0406, lng:-84.5037},
+  '5': {city:'Frankfort',   state:'KY', lat:38.2009, lng:-84.8733},
+  '6': {city:'Benton',      state:'KY', lat:36.8578, lng:-88.3503},
+};
+
+const CITY_COORDS = {
+  'Des Peres_MO':[38.6031,-90.4329], 'St. Louis_MO':[38.6270,-90.1994],
+  'Florence_KY':[38.9984,-84.6266],  'Louisville_KY':[38.2527,-85.7585],
+  'Lexington_KY':[38.0406,-84.5037], 'Versailles_KY':[38.0517,-84.7299],
+  'Bowling Green_KY':[36.9685,-86.4808], 'Frankfort_KY':[38.2009,-84.8733],
+  'Shelbyville_KY':[38.2126,-85.2269],   'Richmond_KY':[37.7479,-84.2947],
+  'Danville_KY':[37.6459,-84.7721],  'Elizabethtown_KY':[37.6987,-85.8591],
+  'Somerset_KY':[37.0920,-84.6041],  'Cadiz_KY':[36.8651,-87.8348],
+  'Owensboro_KY':[37.7719,-87.1111], 'Corbin_KY':[36.9495,-84.0966],
+  'Benton_KY':[36.8578,-88.3503],    'Crittenden_KY':[38.7823,-84.5999],
+  'Carrollton_KY':[38.6817,-85.1758],'Independence_KY':[38.9432,-84.5444],
+  'Taylorsville_KY':[38.0320,-85.3441],'Brownsville_KY':[37.1948,-86.2683],
+  'Bloomington_IL':[40.4842,-88.9937],'Normal_IL':[40.5142,-88.9906],
+};
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const vals = []; let cur = '', inQ = false;
+    for (const c of line) {
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = (vals[i]||'').replace(/^"|"$/g,'').trim());
+    return obj;
+  });
+}
+
+function cityStateFromAddr(addr) {
+  let m = addr.match(/,\s*([A-Za-z][A-Za-z\s\.]+),\s*(?:US-)?([A-Z]{2})[\s,\d]/);
+  if (m) return [m[1].trim(), m[2]];
+  m = addr.match(/,\s*([A-Za-z][A-Za-z\s\.]+),?\s*(KY|IL|MO|IN|OH|WV|PA|TN)\b/);
+  if (m) return [m[1].trim(), m[2]];
+  return [null, null];
+}
+
+function geoForTrainer(addr, cohort, idx) {
+  const jLat = (idx % 7 - 3) * 0.008, jLng = (idx % 5 - 2) * 0.010;
+  const [city, state] = cityStateFromAddr(addr || '');
+  if (city && state) {
+    const c = CITY_COORDS[city+'_'+state];
+    if (c) return {city, state, lat: c[0]+jLat, lng: c[1]+jLng};
+  }
+  const d = COHORT_DEFAULTS[cohort] || COHORT_DEFAULTS['1'];
+  return {city:d.city, state:d.state, lat:d.lat+jLat, lng:d.lng+jLng};
+}
+
+function rowToTrainer(row, idx) {
+  const name = ((row['Name']||'').trim()+' '+(row['Last Name']||'').trim()).trim();
+  const cohort = (row['Cohort']||row['Cohort ']||'').trim();
+  const geo = geoForTrainer((row['ADDRESS']||'').trim(), cohort, idx);
+  return {
+    id: idx,
+    name,
+    email:  (row['Email address']||'').trim(),
+    cohort,
+    org:    (row['Organization']||'').trim(),
+    status: (row['Certification status']||'').trim(),
+    ...geo
+  };
+}
+
+let trainers = [];
+
+// Show loading state, then fetch CSV
+document.getElementById('trainer-count').textContent = '…';
+
+// Try direct fetch first; if CORS blocks it (common when file is opened locally),
+// fall back to a public CORS proxy
+function loadCSV() {
+  return fetch(CSV_URL)
+    .then(r => { if (!r.ok) throw new Error('direct fetch failed'); return r.text(); })
+    .catch(() => {
+      // CORS proxy fallback for environments that block direct Google fetches
+      const proxy = 'https://corsproxy.io/?' + encodeURIComponent(CSV_URL);
+      return fetch(proxy).then(r => { if (!r.ok) throw new Error('proxy fetch failed'); return r.text(); });
+    });
+}
+
+loadCSV()
+  .then(text => {
+    const rows = parseCSV(text);
+    trainers = rows.filter(r => (r['Name']||'').trim()).map((row, i) => rowToTrainer(row, i));
+    if (trainers.length === 0) {
+      document.getElementById('trainer-list').innerHTML =
+        '<div style="padding:16px;color:#c00;font-size:0.78rem;">⚠ Data loaded but no trainers found. Check that column headers in your Sheet match expected names (Name, Last Name, Certification status, Cohort, ADDRESS, Email address, Organization).</div>';
+      document.getElementById('trainer-count').textContent = '0';
+    } else {
+      render();
+    }
+  })
+  .catch(() => {
+    document.getElementById('trainer-list').innerHTML =
+      '<div style="padding:16px;color:#888;font-size:0.8rem;">Unable to load trainer data. Please reload the page or check your internet connection.</div>';
+    document.getElementById('trainer-count').textContent = '—';
+  });
+
+
+let filters = {status:'all', cohort:'all', search:''};
+let selectedId = null;
+let markers = {};
+
+// Carto Voyager — has state/county lines but no red road numbers
+const map = L.map('map', {center:[38.4,-85.6], zoom:7});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains:'abcd', maxZoom:19
+}).addTo(map);
+
+// US state boundaries overlay from a public GeoJSON
+fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+  .then(r => r.json())
+  .then(data => {
+    L.geoJSON(data, {
+      style: { color: '#7a8bbf', weight: 1.4, fillOpacity: 0, dashArray: null }
+    }).addTo(map);
+  }).catch(() => {});
+
+function pinIcon() {
+  return L.divIcon({
+    html:`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="30" viewBox="0 0 20 30">
+      <path d="M10 0C4.48 0 0 4.48 0 10c0 7 10 20 10 20S20 17 20 10C20 4.48 15.52 0 10 0z" fill="#222b54" stroke="white" stroke-width="1.2"/>
+      <circle cx="10" cy="10" r="4" fill="#fdb813"/>
+    </svg>`,
+    className:'', iconSize:[20,30], iconAnchor:[10,30], popupAnchor:[0,-30]
+  });
+}
+
+function statusBadge(status) {
+  if (status === 'Full')        return '<span class="badge badge-full">Full</span>';
+  if (status === 'Provisional') return '<span class="badge badge-prov">Provisional</span>';
+  return '<span class="badge badge-inactive">Not Active</span>';
+}
+
+function isNotActive(t) { return t.status === 'Not active'; }
+
+function getFiltered() {
+  return trainers.filter(t => {
+    if (filters.cohort !== 'all' && t.cohort !== filters.cohort) return false;
+    if (filters.status === 'not-active'  && !isNotActive(t))      return false;
+    if (filters.status === 'Full'        && t.status !== 'Full')  return false;
+    if (filters.status === 'Provisional' && t.status !== 'Provisional') return false;
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      if (![t.name, t.city, t.org, t.state].some(f => f.toLowerCase().includes(q))) return false;
+    }
+    return true;
+  });
+}
+
+function render() {
+  const filtered = getFiltered();
+  Object.values(markers).forEach(m => map.removeLayer(m));
+  markers = {};
+
+  filtered.forEach(t => {
+    const m = L.marker([t.lat, t.lng], {icon: pinIcon()});
+    const emailHtml = t.email ? `<a href="mailto:${t.email}">${t.email}</a>` : '—';
+    const subject = encodeURIComponent(`Trainer Info Update – ${t.name}`);
+    const body = encodeURIComponent(`Hi Nancy,\n\nI'd like to update my Support Over Silence trainer information in the network directory.\n\nName: ${t.name}\nCurrent location: ${t.city}, ${t.state}\nCurrent org: ${t.org || '—'}\nCurrent status: ${t.status}\n\nWhat needs to change:\n[Please describe your updates here]\n\nThank you!`);
+    const updateLink = `<a href="mailto:info@supportoversilence.com?subject=${subject}&body=${body}" class="popup-update-link">✏ Update my info</a>`;
+
+    m.bindPopup(`<div class="popup-inner">
+      <div class="popup-name">${t.name}</div>
+      <div class="popup-row"><strong>Location:</strong> ${t.city}, ${t.state}</div>
+      ${t.org ? `<div class="popup-row"><strong>Org:</strong> ${t.org}</div>` : ''}
+      <div class="popup-row"><strong>Email:</strong> ${emailHtml}</div>
+      <div class="popup-badges">
+        <span class="badge badge-cohort">Cohort ${t.cohort}</span>
+        ${statusBadge(t.status)}
+      </div>
+      <div class="popup-update">${updateLink}</div>
+    </div>`, {maxWidth:270});
+    m.on('click', () => selectTrainer(t.id, false));
+    m.addTo(map);
+    markers[t.id] = m;
+  });
+
+  const list = document.getElementById('trainer-list');
+  list.innerHTML = '';
+  [...filtered].sort((a,b) => a.name.localeCompare(b.name)).forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'trainer-card' + (t.id === selectedId ? ' selected' : '');
+    div.id = `card-${t.id}`;
+    div.innerHTML = `
+      <div class="tc-name">${t.name}</div>
+      <div class="tc-location">${t.city}, ${t.state}</div>
+      ${t.org ? `<div class="tc-org">${t.org}</div>` : ''}
+      <div class="tc-badges">
+        <span class="badge badge-cohort">Cohort ${t.cohort}</span>
+        ${statusBadge(t.status)}
+      </div>`;
+    div.addEventListener('click', () => selectTrainer(t.id, true));
+    list.appendChild(div);
+  });
+
+  document.getElementById('trainer-count').textContent = filtered.length;
+}
+
+function selectTrainer(id, pan) {
+  selectedId = id;
+  document.querySelectorAll('.trainer-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById(`card-${id}`);
+  if (card) { card.classList.add('selected'); card.scrollIntoView({block:'nearest'}); }
+  if (markers[id]) {
+    if (pan) { const t = trainers.find(x => x.id===id); map.setView([t.lat, t.lng], 11); }
+    markers[id].openPopup();
+  }
+}
+
+// Search box with clear button
+const searchBox = document.getElementById('search-box');
+const clearBtn  = document.getElementById('search-clear');
+searchBox.addEventListener('input', e => {
+  filters.search = e.target.value.trim();
+  clearBtn.style.display = filters.search ? 'block' : 'none';
+  render();
+});
+clearBtn.addEventListener('click', () => {
+  searchBox.value = '';
+  filters.search = '';
+  clearBtn.style.display = 'none';
+  searchBox.focus();
+  render();
+});
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const g = btn.dataset.filter;
+    document.querySelectorAll(`[data-filter="${g}"]`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filters[g] = btn.dataset.value;
+    render();
+  });
+});
+
+// Print / download directory
+function printDirectory() {
+  // Inject a temporary print-only header showing active filters
+  const filtered = getFiltered();
+  const statusLabel = filters.status === 'all' ? 'All Statuses' :
+                      filters.status === 'not-active' ? 'Not Active' : filters.status;
+  const cohortLabel = filters.cohort === 'all' ? 'All Cohorts' : 'Cohort ' + filters.cohort;
+  const searchLabel = filters.search ? ` · Search: "${filters.search}"` : '';
+  const subtitle = `${statusLabel} · ${cohortLabel}${searchLabel} · ${filtered.length} trainers`;
+
+  let ph = document.getElementById('print-header');
+  if (!ph) {
+    ph = document.createElement('div');
+    ph.id = 'print-header';
+    ph.style.cssText = 'display:none';
+    document.body.insertBefore(ph, document.body.firstChild);
+  }
+  ph.innerHTML = `<div style="background:#222b54;color:white;padding:12px 18px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="font-size:1rem;font-weight:800;">Support Over Silence for KIDS Certified Trainers Network</div>
+    <div style="font-size:0.78rem;opacity:0.8;margin-top:3px;">${subtitle}</div>
+  </div>`;
+
+  // Show it only during print
+  const style = document.createElement('style');
+  style.id = 'print-inject';
+  style.textContent = '@media print { #print-header { display: block !important; } }';
+  document.head.appendChild(style);
+
+  window.print();
+
+  // Clean up injected style after print dialog closes
+  setTimeout(() => { const s = document.getElementById('print-inject'); if (s) s.remove(); }, 1000);
+}
+
+</script>
+</body>
+</html>
