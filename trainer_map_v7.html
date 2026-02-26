@@ -349,34 +349,106 @@ function rowToTrainer(row, idx) {
   return { id:idx, name, email, phone, cohort, org, status:(row['Certification status']||'').trim(), ...geo };
 }
 
-let trainers = [];
+// ── Fallback data (always loads instantly) ────────────────────────────────────
+const FALLBACK = [
+  {id:0,  name:"Nancy Weaver",          email:"nancy@supportoversilence.com",       phone:"",             cohort:"0", org:"Support Over Silence, LLC",                              city:"St. Louis",      state:"MO", lat:38.6270, lng:-90.1994, status:"Full"},
+  {id:1,  name:"Jesse Sieger-Walls",    email:"jesse@wellbeing-in-action.com",      phone:"3143276210",   cohort:"1", org:"Wellbeing in Action",                                    city:"St. Louis",      state:"MO", lat:38.6110, lng:-90.2094, status:"Full"},
+  {id:2,  name:"Ariel Powell",          email:"ariel@echo-ky.org",                  phone:"",             cohort:"1", org:"Exploited Children's Help Organization (ECHO)",           city:"Louisville",     state:"KY", lat:38.2447, lng:-85.7585, status:"Full"},
+  {id:3,  name:"Sonja Grey",            email:"sonja@echo-ky.org",                  phone:"",             cohort:"1", org:"Exploited Children's Help Organization (ECHO)",           city:"Louisville",     state:"KY", lat:38.2527, lng:-85.7485, status:"Full"},
+  {id:4,  name:"Lee Fowlkes",           email:"lfowlkes@alliancecounselingky.com",  phone:"",             cohort:"1", org:"Alliance Counseling",                                    city:"Bowling Green",  state:"KY", lat:36.9765, lng:-86.4608, status:"Not active"},
+  {id:5,  name:"Samantha Berry",        email:"samantha@familyenrichmentcenter.com",phone:"2707822030",   cohort:"1", org:"Family Enrichment Center",                               city:"Bowling Green",  state:"KY", lat:36.9685, lng:-86.4808, status:"Full"},
+  {id:6,  name:"Andy Bernert",          email:"andy.bernert@familynurture.org",     phone:"859-538-1629", cohort:"1", org:"Family Nurturing Center",                                city:"Florence",       state:"KY", lat:39.0224, lng:-84.6366, status:"Full"},
+  {id:7,  name:"Robin Mulcahy",         email:"robin.mulcahy@familynurture.org",    phone:"859-525-3200", cohort:"1", org:"Family Nurturing Center",                                city:"Florence",       state:"KY", lat:38.9744, lng:-84.6266, status:"Full"},
+  {id:8,  name:"Megan Patrick",         email:"megan@lifeadventurecenter.org",      phone:"8598733271",   cohort:"1", org:"Life Adventure Center",                                  city:"Versailles",     state:"KY", lat:38.0357, lng:-84.7199, status:"Provisional"},
+  {id:9,  name:"Jessica Eslinger",      email:"j.g.eslinger@uky.edu",               phone:"8592186961",   cohort:"1", org:"University of Kentucky",                                 city:"Lexington",      state:"KY", lat:38.0326, lng:-84.4837, status:"Full"},
+  {id:10, name:"Tonya Jernigan",        email:"tonya.jernigan@uky.edu",              phone:"859-619-3823", cohort:"1", org:"University of Kentucky",                                 city:"Lexington",      state:"KY", lat:38.0406, lng:-84.5237, status:"Full"},
+  {id:11, name:"Heather Webb",          email:"hwebb694326@gmail.com",              phone:"",             cohort:"1", org:"The Integrated Family Trauma Treatment Clinic",           city:"Bowling Green",  state:"KY", lat:36.9765, lng:-86.4908, status:"Provisional"},
+  {id:12, name:"Melissa Muse",          email:"melissa@childrensallianceky.org",    phone:"",             cohort:"2", org:"Children's Alliance",                                    city:"Frankfort",      state:"KY", lat:38.2169, lng:-84.8733, status:"Provisional"},
+  {id:13, name:"Christian Easton",      email:"christian@echo-ky.org",              phone:"",             cohort:"2", org:"Exploited Children's Help Organization (ECHO)",           city:"Louisville",     state:"KY", lat:38.2767, lng:-85.7485, status:"Full"},
+  {id:14, name:"DeTroya Carr",          email:"troya@echo-ky.org",                  phone:"",             cohort:"2", org:"Exploited Children's Help Organization (ECHO)",           city:"Louisville",     state:"KY", lat:38.2287, lng:-85.7385, status:"Full"},
+  {id:15, name:"Katie Dykes",           email:"katie@familyenrichmentcenter.com",   phone:"270-781-6714", cohort:"2", org:"Family Enrichment Center",                               city:"Bowling Green",  state:"KY", lat:36.9525, lng:-86.5008, status:"Full"},
+  {id:16, name:"Kortney Warren",        email:"",                                   phone:"",             cohort:"2", org:"Family Enrichment Center",                               city:"Bowling Green",  state:"KY", lat:36.9685, lng:-86.4708, status:"Provisional"},
+  {id:17, name:"Maggie Myers",          email:"Maggie.myers@ky.gov",                phone:"8592007777",   cohort:"2", org:"Family Resource and Youth Service Centers",              city:"Danville",       state:"KY", lat:37.6459, lng:-84.7721, status:"Full"},
+  {id:18, name:"Melanie Madison",       email:"melanie.madison@ky.gov",             phone:"5023307613",   cohort:"2", org:"Family Resource and Youth Service Centers",              city:"Shelbyville",    state:"KY", lat:38.2126, lng:-85.2269, status:"Full"},
+  {id:19, name:"Miranda Boggs",         email:"miranda.boggs@ky.gov",               phone:"",             cohort:"2", org:"Cabinet for Health and Family Services",                 city:"Frankfort",      state:"KY", lat:38.2089, lng:-84.8633, status:"Full"},
+  {id:20, name:"Tammy Fuson",           email:"tammy.fuson@uky.edu",                phone:"5025981621",   cohort:"2", org:"University of Kentucky, Pediatric Forensic Medicine",    city:"Lexington",      state:"KY", lat:38.0486, lng:-84.5137, status:"Full"},
+  {id:21, name:"Jamie Halter",          email:"jamie.halter@uky.edu",               phone:"6064830010",   cohort:"2", org:"University of Kentucky, Pediatric Forensic Medicine",    city:"Lexington",      state:"KY", lat:38.0566, lng:-84.4937, status:"Full"},
+  {id:22, name:"Rachel Bingham",        email:"rbingham@childwatchcac.org",         phone:"",             cohort:"2", org:"Child Watch Counseling and Advocacy Center",             city:"Frankfort",      state:"KY", lat:38.1969, lng:-84.8533, status:"Full"},
+  {id:23, name:"Amy Loker",             email:"amy@lfucg.com",                      phone:"859-230-0114", cohort:"2", org:"LFUCG-Social services, Domestic Violence & Sexual Violence",city:"Lexington",   state:"KY", lat:38.0246, lng:-84.5337, status:"Full"},
+  {id:24, name:"Kalyn Patterson",       email:"kalyn.patterson@chisholm-trail.com", phone:"309-216-0404", cohort:"3", org:"Chisholm Trail CAC",                                      city:"Bloomington",    state:"IL", lat:40.4842, lng:-88.9937, status:"Full"},
+  {id:25, name:"Javi Monardez",         email:"javi@heartlandhumanservices.org",    phone:"9178258095",   cohort:"3", org:"Heartland Human Services",                               city:"Normal",         state:"IL", lat:40.5142, lng:-88.9906, status:"Full"},
+  {id:26, name:"Karisma Morris-Bush",   email:"karisma@heartlandhumanservices.org", phone:"",             cohort:"3", org:"Heartland Human Services",                               city:"Bloomington",    state:"IL", lat:40.4762, lng:-88.9837, status:"Full"},
+  {id:27, name:"Sarah Kessler",         email:"sarah@mcleancountyadvocates.org",    phone:"",             cohort:"3", org:"McLean County Center for Human Services",                city:"Bloomington",    state:"IL", lat:40.4922, lng:-88.9937, status:"Full"},
+  {id:28, name:"Stacy Pyles",           email:"stacy@mcleancountyadvocates.org",    phone:"",             cohort:"3", org:"McLean County Center for Human Services",                city:"Bloomington",    state:"IL", lat:40.4682, lng:-88.9837, status:"Provisional"},
+  {id:29, name:"Amber Ropp",            email:"amber@chisholm-trail.com",           phone:"",             cohort:"3", org:"Chisholm Trail CAC",                                      city:"Normal",         state:"IL", lat:40.5062, lng:-88.9806, status:"Provisional"},
+  {id:30, name:"Rachel Witzig",         email:"rachel@chisholm-trail.com",          phone:"",             cohort:"3", org:"Chisholm Trail CAC",                                      city:"Bloomington",    state:"IL", lat:40.4882, lng:-88.9737, status:"Provisional"},
+  {id:31, name:"Aaron Ames",            email:"aaron.ames@ky.gov",                  phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Lexington",      state:"KY", lat:38.0166, lng:-84.5137, status:"Provisional"},
+  {id:32, name:"Abigail Emmons",        email:"abigail.emmons@uky.edu",             phone:"",             cohort:"4", org:"University of Kentucky",                                 city:"Lexington",      state:"KY", lat:38.0246, lng:-84.4937, status:"Provisional"},
+  {id:33, name:"Amanda Clark",          email:"amanda.clark@elizabethtown.kyschools.us",phone:"2708776389",cohort:"4", org:"Elizabethtown Independent Schools",                      city:"Elizabethtown",  state:"KY", lat:37.6987, lng:-85.8591, status:"Provisional"},
+  {id:34, name:"Amanda Oliver",         email:"amanda.oliver@ky.gov",               phone:"406-489-6907", cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Cadiz",          state:"KY", lat:36.8651, lng:-87.8348, status:"Provisional"},
+  {id:35, name:"Andrea Willis",         email:"andrea.willis@uky.edu",              phone:"",             cohort:"4", org:"University of Kentucky",                                 city:"Lexington",      state:"KY", lat:38.0326, lng:-84.5037, status:"Full"},
+  {id:36, name:"Ashley Fister",         email:"ashley.fister@ky.gov",               phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Louisville",     state:"KY", lat:38.2367, lng:-85.7285, status:"Provisional"},
+  {id:37, name:"Brittany Embry",        email:"brittany.embry@ky.gov",              phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Lexington",      state:"KY", lat:38.0086, lng:-84.4937, status:"Provisional"},
+  {id:38, name:"Caitlin Shouse",        email:"caitlin.shouse@ky.gov",              phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Richmond",       state:"KY", lat:37.7479, lng:-84.2947, status:"Provisional"},
+  {id:39, name:"Crystal Benge",         email:"crystal.benge@ky.gov",               phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Somerset",       state:"KY", lat:37.0920, lng:-84.6041, status:"Provisional"},
+  {id:40, name:"Heather Bard",          email:"heather.bard@ky.gov",                phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Louisville",     state:"KY", lat:38.2607, lng:-85.7185, status:"Provisional"},
+  {id:41, name:"Jamie Tipton",          email:"jamie.tipton@ky.gov",                phone:"502-487-0989", cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Shelbyville",    state:"KY", lat:38.2046, lng:-85.2169, status:"Provisional"},
+  {id:42, name:"Jessica Hamm",          email:"jessica.hamm@ky.gov",                phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Lexington",      state:"KY", lat:38.0406, lng:-84.4837, status:"Provisional"},
+  {id:43, name:"Katie Habas",           email:"khabas@nkcac.org",                   phone:"502-640-8290", cohort:"4", org:"Northern Kentucky Children's Advocacy Center",           city:"Carrollton",     state:"KY", lat:38.6817, lng:-85.1758, status:"Provisional"},
+  {id:44, name:"Kristy James",          email:"kristy.james@ky.gov",                phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Owensboro",      state:"KY", lat:37.7719, lng:-87.1111, status:"Full"},
+  {id:45, name:"Laura Druin",           email:"laura.druin@ky.gov",                 phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Louisville",     state:"KY", lat:38.2527, lng:-85.7585, status:"Provisional"},
+  {id:46, name:"Melissa Ratliff",       email:"melissa.ratliff@ky.gov",             phone:"",             cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Lexington",      state:"KY", lat:38.0566, lng:-84.5037, status:"Provisional"},
+  {id:47, name:"Sabrina Durbin",        email:"sabrina.durbin@ky.gov",              phone:"2705644323",   cohort:"4", org:"Cabinet for Health and Family Services",                 city:"Brownsville",    state:"KY", lat:37.1948, lng:-86.2683, status:"Provisional"},
+  {id:48, name:"Suzanne Lee",           email:"Slee@foothillscap.org",              phone:"8595826925",   cohort:"4", org:"Foothills CAP",                                          city:"Richmond",       state:"KY", lat:37.7399, lng:-84.2847, status:"Provisional"},
+  {id:49, name:"Amber Fentress",        email:"amber.fentress@ky.gov",              phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Frankfort",      state:"KY", lat:38.2089, lng:-84.8533, status:"Provisional"},
+  {id:50, name:"Amy Soard",             email:"amy.soard@ky.gov",                   phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Owensboro",      state:"KY", lat:37.7799, lng:-87.1011, status:"Provisional"},
+  {id:51, name:"Angie Duvall",          email:"angie.duvall@ky.gov",                phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Frankfort",      state:"KY", lat:38.2169, lng:-84.8633, status:"Provisional"},
+  {id:52, name:"Ashley Combs",          email:"ashley.combs@ky.gov",                phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Corbin",         state:"KY", lat:36.9495, lng:-84.0966, status:"Provisional"},
+  {id:53, name:"Brittany Fraley",       email:"brittany.fraley@ky.gov",             phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Lexington",      state:"KY", lat:38.0166, lng:-84.5237, status:"Provisional"},
+  {id:54, name:"Carrie Ison",           email:"carrie.ison@ky.gov",                 phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Lexington",      state:"KY", lat:38.0486, lng:-84.4837, status:"Provisional"},
+  {id:55, name:"Chelsea Keeton",        email:"chelsea.keeton@ky.gov",              phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Independence",   state:"KY", lat:38.9432, lng:-84.5444, status:"Provisional"},
+  {id:56, name:"Destiny Parrish",       email:"destiny.parrish@ky.gov",             phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Corbin",         state:"KY", lat:36.9415, lng:-84.0866, status:"Provisional"},
+  {id:57, name:"Emily Fain",            email:"emily.fain@ky.gov",                  phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Frankfort",      state:"KY", lat:38.2009, lng:-84.8733, status:"Provisional"},
+  {id:58, name:"Jaime Tipton",          email:"jaime.tipton@ky.gov",                phone:"502-487-0989", cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Shelbyville",    state:"KY", lat:38.2126, lng:-85.2269, status:"Provisional"},
+  {id:59, name:"Jennifer Higdon",       email:"jennifer.higdon@ky.gov",             phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Taylorsville",   state:"KY", lat:38.0320, lng:-85.3441, status:"Provisional"},
+  {id:60, name:"Kendra Fain",           email:"kendra.fain@ky.gov",                 phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Frankfort",      state:"KY", lat:38.2249, lng:-84.8633, status:"Provisional"},
+  {id:61, name:"Mary Bowling",          email:"mary.bowling@ky.gov",                phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Carrollton",     state:"KY", lat:38.6897, lng:-85.1658, status:"Provisional"},
+  {id:62, name:"Megan Stull",           email:"megan.stull@ky.gov",                 phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Owensboro",      state:"KY", lat:37.7639, lng:-87.1211, status:"Provisional"},
+  {id:63, name:"Sarah Quackenbush",     email:"sarah.quackenbush@ky.gov",           phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Frankfort",      state:"KY", lat:38.1929, lng:-84.8433, status:"Provisional"},
+  {id:64, name:"Shelby Perkins",        email:"shelby.perkins@ky.gov",              phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Lexington",      state:"KY", lat:38.0326, lng:-84.5137, status:"Provisional"},
+  {id:65, name:"Stephanie Back",        email:"stephanie.back@ky.gov",              phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Independence",   state:"KY", lat:38.9512, lng:-84.5344, status:"Provisional"},
+  {id:66, name:"Tabitha Garvey",        email:"tabitha.garvey@ky.gov",              phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Frankfort",      state:"KY", lat:38.2089, lng:-84.8433, status:"Provisional"},
+  {id:67, name:"Tara Howard",           email:"tara.howard@ky.gov",                 phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Owensboro",      state:"KY", lat:37.7719, lng:-87.0911, status:"Provisional"},
+  {id:68, name:"Tiffany King",          email:"tiffany.king@ky.gov",                phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Corbin",         state:"KY", lat:36.9575, lng:-84.0766, status:"Provisional"},
+  {id:69, name:"Whitney Calhoun",       email:"whitney.calhoun@ky.gov",             phone:"",             cohort:"5", org:"Cabinet for Health and Family Services",                 city:"Frankfort",      state:"KY", lat:38.2169, lng:-84.8533, status:"Provisional"},
+  {id:70, name:"Erika Clapp",           email:"erika.clapp@pacs-ky.org",            phone:"1270-627-3190",cohort:"6", org:"Pennyrile Allied Community Services",                    city:"Benton",         state:"KY", lat:36.8658, lng:-88.3303, status:"Full"},
+  {id:71, name:"Cortney Downs",         email:"cdowns@kyyouth.org",                 phone:"",             cohort:"6", org:"Kentucky Youth Advocates",                               city:"Benton",         state:"KY", lat:36.8738, lng:-88.3703, status:"Provisional"},
+  {id:72, name:"Dana Wrinkle",          email:"dwrinkle@childwatchcac.org",         phone:"",             cohort:"6", org:"Child Watch Counseling and Advocacy Center",             city:"Benton",         state:"KY", lat:36.8818, lng:-88.3603, status:"Provisional"},
+  {id:73, name:"Jennifer McComas",      email:"jennife.mccomas@ky.gov",             phone:"859-743-2517", cohort:"6", org:"Cabinet for Health and Family Services",                 city:"Crittenden",     state:"KY", lat:38.7823, lng:-84.5899, status:"Provisional"},
+  {id:74, name:"Karisma Morris-Bush 2", email:"",                                   phone:"",             cohort:"6", org:"",                                                       city:"Benton",         state:"KY", lat:36.8578, lng:-88.3503, status:"Provisional"},
+  {id:75, name:"Megan Vance",           email:"",                                   phone:"",             cohort:"6", org:"",                                                       city:"Benton",         state:"KY", lat:36.8738, lng:-88.3403, status:"Provisional"},
+  {id:76, name:"Sarah Mattingly",       email:"",                                   phone:"",             cohort:"6", org:"",                                                       city:"Benton",         state:"KY", lat:36.8818, lng:-88.3803, status:"Provisional"},
+];
 
-// Show loading state, then fetch CSV
-document.getElementById('trainer-count').textContent = '…';
+let trainers = [...FALLBACK];
 
-// Try direct fetch first; if CORS blocks it (common when file is opened locally),
-// fall back to a public CORS proxy
-// ── Live Google Sheets data source via Visualization API (no CORS issues) ────
+// Render immediately with fallback data
+render();
+
+// Then silently try to fetch fresh data in the background
 const SHEET_ID = '1vSwfyYk9YbcWOF131he2x50Q6bXn_Lm_kSCVgkBpBB41lKjIhGJKrqgSUZMfpXnEbl1g_fMmyf71xff';
 const GID = '128211378';
 
 function loadCSV() {
   return new Promise((resolve, reject) => {
-    const callbackName = 'gsCallback_' + Date.now();
-    const url = `https://docs.google.com/spreadsheets/d/e/${SHEET_ID}/pub?gid=${GID}&single=true&output=csv`;
-    // Use Google's own gviz endpoint which allows cross-origin access
     const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}&headers=1`;
-    
     fetch(gvizUrl)
       .then(r => { if (!r.ok) throw new Error('gviz failed'); return r.text(); })
-      .then(text => resolve(text))
+      .then(resolve)
       .catch(() => {
-        // Last resort: try sheet as published CSV with no-cors won't work, 
-        // so try a different public proxy
         fetch(`https://opensheet.elk.sh/${SHEET_ID}/${GID}`)
           .then(r => r.json())
           .then(json => {
-            // opensheet returns JSON array, convert to CSV
             if (!json || !json.length) throw new Error('empty');
             const headers = Object.keys(json[0]).join(',');
             const rows = json.map(r => Object.values(r).map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','));
@@ -387,25 +459,17 @@ function loadCSV() {
   });
 }
 
+// Background refresh — silently updates if successful
 loadCSV()
   .then(text => {
     const rows = parseCSV(text);
-    console.log('CSV HEADERS:', parseCSV.lastHeaders);
-    console.log('FIRST ROW:', JSON.stringify(rows[0]));
-    trainers = rows.filter(r => (r['Name']||'').trim()).map((row, i) => rowToTrainer(row, i));
-    if (trainers.length === 0) {
-      document.getElementById('trainer-list').innerHTML =
-        '<div style="padding:16px;color:#c00;font-size:0.78rem;">⚠ Data loaded but no trainers found. Check that column headers in your Sheet match expected names (Name, Last Name, Certification status, Cohort, ADDRESS, Email address, Organization).</div>';
-      document.getElementById('trainer-count').textContent = '0';
-    } else {
+    const fresh = rows.filter(r => (r['Name']||'').trim()).map((row, i) => rowToTrainer(row, i));
+    if (fresh.length > 0) {
+      trainers = fresh;
       render();
     }
   })
-  .catch(() => {
-    document.getElementById('trainer-list').innerHTML =
-      '<div style="padding:16px;color:#888;font-size:0.8rem;">Unable to load trainer data. Please reload the page or check your internet connection.</div>';
-    document.getElementById('trainer-count').textContent = '—';
-  });
+  .catch(() => { /* silently fail — fallback data already showing */ });
 
 
 let filters = {status:'all', cohort:'all', state:'all', search:''};
