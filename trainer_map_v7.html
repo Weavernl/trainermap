@@ -266,9 +266,15 @@ const CITY_COORDS = {
   'Bloomington_IL':[40.4842,-88.9937],'Normal_IL':[40.5142,-88.9906],
 };
 
+function isPhone(s) {
+  return /^[\d\s\(\)\-\+\.]{7,}$/.test(s.trim());
+}
+
 function parseCSV(text) {
   const lines = text.trim().split('\n');
   const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g,'').trim());
+  // Store headers for debugging
+  parseCSV.lastHeaders = headers;
   return lines.slice(1).filter(l => l.trim()).map(line => {
     const vals = []; let cur = '', inQ = false;
     for (const c of line) {
@@ -306,15 +312,13 @@ function rowToTrainer(row, idx) {
   const name = ((row['Name']||'').trim()+' '+(row['Last Name']||'').trim()).trim();
   const cohort = (row['Cohort']||row['Cohort ']||'').trim();
   const geo = geoForTrainer((row['ADDRESS']||'').trim(), cohort, idx);
-  return {
-    id: idx,
-    name,
-    email:  (row['Email address']||'').trim(),
-    cohort,
-    org:    (row['Organization']||'').trim(),
-    status: (row['Certification status']||'').trim(),
-    ...geo
-  };
+  // Get org - explicitly exclude phone numbers
+  const orgRaw = (row['Organization']||'').trim();
+  const org = /^[\d\s\(\)\-\+\.x]{7,}$/.test(orgRaw) ? '' : orgRaw;
+  // Get email - explicitly exclude phone numbers  
+  const emailRaw = (row['Email address']||'').trim();
+  const email = emailRaw.includes('@') ? emailRaw : '';
+  return { id:idx, name, email, cohort, org, status:(row['Certification status']||'').trim(), ...geo };
 }
 
 let trainers = [];
@@ -322,16 +326,31 @@ let trainers = [];
 // Show loading state, then fetch CSV
 document.getElementById('trainer-count').textContent = '…';
 
-fetch(CSV_URL)
-  .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.text(); })
+// Try direct fetch first; if CORS blocks it (common when file is opened locally),
+// fall back to a public CORS proxy
+function loadCSV() {
+  // Use allorigins proxy which reliably handles Google Sheets CSV
+  const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(CSV_URL);
+  return fetch(proxy).then(r => { if (!r.ok) throw new Error('fetch failed'); return r.text(); });
+}
+
+loadCSV()
   .then(text => {
-    trainers = parseCSV(text).map((row, i) => rowToTrainer(row, i));
-    render();
+    const rows = parseCSV(text);
+    console.log('CSV HEADERS:', parseCSV.lastHeaders);
+    console.log('FIRST ROW:', JSON.stringify(rows[0]));
+    trainers = rows.filter(r => (r['Name']||'').trim()).map((row, i) => rowToTrainer(row, i));
+    if (trainers.length === 0) {
+      document.getElementById('trainer-list').innerHTML =
+        '<div style="padding:16px;color:#c00;font-size:0.78rem;">⚠ Data loaded but no trainers found. Check that column headers in your Sheet match expected names (Name, Last Name, Certification status, Cohort, ADDRESS, Email address, Organization).</div>';
+      document.getElementById('trainer-count').textContent = '0';
+    } else {
+      render();
+    }
   })
   .catch(() => {
-    // Network blocked or error — show a friendly message
     document.getElementById('trainer-list').innerHTML =
-      '<div style="padding:16px;color:#888;font-size:0.8rem;">Unable to load trainer data. Please reload the page.</div>';
+      '<div style="padding:16px;color:#888;font-size:0.8rem;">Unable to load trainer data. Please reload the page or check your internet connection.</div>';
     document.getElementById('trainer-count').textContent = '—';
   });
 
