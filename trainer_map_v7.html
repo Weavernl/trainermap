@@ -432,9 +432,6 @@ const FALLBACK = [
 
 let trainers = [...FALLBACK];
 
-// Render immediately with fallback data
-render();
-
 // Then silently try to fetch fresh data in the background
 const SHEET_ID = '1vSwfyYk9YbcWOF131he2x50Q6bXn_Lm_kSCVgkBpBB41lKjIhGJKrqgSUZMfpXnEbl1g_fMmyf71xff';
 const GID = '128211378';
@@ -653,6 +650,8 @@ function printDirectory() {
   // Clean up injected style after print dialog closes
   setTimeout(() => { const s = document.getElementById('print-inject'); if (s) s.remove(); }, 1000);
 }
+// Initial render with fallback data
+render();
 
 </script>
 </body>
