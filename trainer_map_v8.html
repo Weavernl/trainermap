@@ -205,6 +205,7 @@ body { font-family: 'Lato', 'Segoe UI', Arial, sans-serif; background: #f5f0e6; 
   </div>
 </div>
 
+<div id="trainer-tooltip" class="trainer-tooltip"></div>
 <script>
 const SHEET_ID   = '1vMfqzcLq_cZzn7GTm3G2WFWlHOWwcMMpWyARvEY-xf0';
 const SHEET_PUB  = '2PACX-1vQYFHCeD4E7YtkHrKALhLQTWF6TORK5KxJ2UFgJLd_glWXfGNcJf5EqufCcM6bogtErGu1EI21nNJL6';
@@ -285,8 +286,10 @@ function formatPhone(p) {
 }
 
 function programType(t) {
-  const hasss = t.ss_status && t.ss_status.toLowerCase() !== 'not active' && t.ss_status !== '';
-  const hasolley = t.olley_status && t.olley_status.toLowerCase() !== 'not active' && t.olley_status !== '';
+  const ssVal = (t.ss_status || '').trim().toLowerCase();
+  const olleyVal = (t.olley_status || '').trim().toLowerCase();
+  const hasss    = ssVal !== '' && ssVal !== 'not active';
+  const hasolley = olleyVal !== '' && olleyVal !== 'not active';
   if (hasss && hasolley) return 'both';
   if (hasolley) return 'olley';
   return 'ss';
@@ -296,24 +299,30 @@ function pinIcon(trainer) {
   const prog = programType(trainer);
   const sessions = trainer.lifetimeSessions || 0;
 
-  let bodyColor = '#222b54';
-  if (prog === 'olley') bodyColor = '#0ba5a5';
+  // Pin body color
+  let bodyColor = '#222b54'; // S/S = navy
+  if (prog === 'olley') bodyColor = '#0ba5a5'; // Olley = teal
+  if (prog === 'both')  bodyColor = '#222b54'; // Both = navy body, gold dot signals both
 
-  let dotColor = '#fdb813';
-  if (prog === 'olley') dotColor = '#ffffff';
+  // Center dot
+  let dotColor = '#fdb813'; // gold for SS and Both
+  if (prog === 'olley') dotColor = '#ffffff'; // white for Olley-only
 
-  let milestone = '';
+  // Milestone indicators — drawn INSIDE pin, replacing the simple dot
+  // 10-14 sessions: small ring around dot
+  // 15+: star replaces dot
+  let inner = `<circle cx="11" cy="11" r="3.5" fill="${dotColor}"/>`;
   if (sessions >= 15) {
-    milestone = `<text x="11" y="15" text-anchor="middle" font-size="9" fill="white" font-weight="bold">★</text>`;
+    inner = `<text x="11" y="15" text-anchor="middle" font-size="10" fill="white">★</text>`;
   } else if (sessions >= 10) {
-    milestone = `<circle cx="11" cy="11" r="5.5" fill="none" stroke="white" stroke-width="1.8"/>`;
+    inner = `<circle cx="11" cy="11" r="3.5" fill="${dotColor}"/>
+      <circle cx="11" cy="11" r="6" fill="none" stroke="${dotColor}" stroke-width="1.5" opacity="0.7"/>`;
   }
 
   return L.divIcon({
     html: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="32" viewBox="0 0 22 32">
       <path d="M11 0C5.48 0 1 4.48 1 10c0 7.75 10 22 10 22S21 17.75 21 10C21 4.48 16.52 0 11 0z" fill="${bodyColor}" stroke="white" stroke-width="1.5"/>
-      <circle cx="11" cy="11" r="4" fill="${dotColor}"/>
-      ${milestone}
+      ${inner}
     </svg>`,
     className: '', iconSize: [22, 32], iconAnchor: [11, 32], popupAnchor: [0, -32]
   });
@@ -357,16 +366,19 @@ fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geo
   .catch(() => {});
 
 async function fetchCSV(gid) {
-  // Strategy 1: published pub URL with e/ key (most reliable for published sheets)
+  // gviz works reliably for sheets shared with "Anyone with the link"
   const urls = [
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`,
     `https://docs.google.com/spreadsheets/d/e/${SHEET_PUB}/pub?gid=${gid}&single=true&output=csv`,
     `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?gid=${gid}&single=true&output=csv`,
-    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`,
   ];
   for (const url of urls) {
     try {
       const r = await fetch(url);
-      if (r.ok) { const t = await r.text(); if (t.length > 50) return t; }
+      if (r.ok) {
+        const t = await r.text();
+        if (t.length > 50 && !t.includes('<!DOCTYPE')) return t;
+      }
     } catch {}
   }
   throw new Error('Load failed');
@@ -396,7 +408,9 @@ async function loadData() {
   // Parse roster
   const rosterRows = parseCSV(rosterText);
   // Debug: log column headers once so we can verify Olley column name
-  if (rosterRows.length > 0) console.log('Roster columns:', Object.keys(rosterRows[0]).join(' | '));
+  if (rosterRows.length > 0) {
+    console.log('Roster columns:', Object.keys(rosterRows[0]).join(' | '));
+  }
   const cohortSet = new Set();
   const stateSet = new Set();
 
@@ -527,6 +541,23 @@ function render() {
     </div>`, { maxWidth: 240 });
 
     m.on('click', () => selectTrainer(t.id, false));
+
+    // Hover tooltip — show name on mouseover
+    m.on('mouseover', function(e) {
+      const tooltip = document.getElementById('trainer-tooltip');
+      tooltip.textContent = t.fullName;
+      const point = map.latLngToContainerPoint(e.latlng);
+      const mapEl = document.getElementById('map');
+      const rect = mapEl.getBoundingClientRect();
+      tooltip.style.left = (rect.left + point.x) + 'px';
+      tooltip.style.top  = (rect.top  + point.y - 32) + 'px';
+      tooltip.style.position = 'fixed';
+      tooltip.style.opacity = '1';
+    });
+    m.on('mouseout', function() {
+      document.getElementById('trainer-tooltip').style.opacity = '0';
+    });
+
     m.addTo(map);
     markers[t.id] = m;
   });
