@@ -182,8 +182,8 @@ body { font-family: 'Lato', 'Segoe UI', Arial, sans-serif; background: #f5f0e6; 
   <div class="legend-item"><span class="legend-dot" style="background:#0ba5a5"></span> Olley certified</div>
   <div class="legend-item"><span class="legend-dot" style="background:#fdb813"></span> Both programs</div>
   <span style="margin-left:8px; font-weight:700; font-size:0.7rem; color:#444;">Milestones:</span>
-  <div class="legend-item">⭐ 10+ sessions</div>
-  <div class="legend-item">🌟 15+ sessions</div>
+  <div class="legend-item">⭐ 15+ sessions</div>
+  <div class="legend-item">🌟 20+ sessions</div>
 </div>
 
 <div id="main">
@@ -295,22 +295,25 @@ function programType(t) {
 function pinIcon(trainer) {
   const prog = programType(trainer);
   const sessions = trainer.lifetimeSessions || 0;
-  
-  let bodyColor = '#222b54'; // ss default
+
+  let bodyColor = '#222b54';
   if (prog === 'olley') bodyColor = '#0ba5a5';
-  if (prog === 'both') bodyColor = '#fdb813';
-  
-  let star = '';
-  if (sessions >= 15) {
-    star = `<text x="10" y="13" text-anchor="middle" font-size="9" fill="white">★</text>`;
-  } else if (sessions >= 10) {
-    star = `<circle cx="10" cy="10" r="4" fill="none" stroke="white" stroke-width="1.5"/>`;
+
+  let dotColor = '#fdb813';
+  if (prog === 'olley') dotColor = '#ffffff';
+
+  let milestone = '';
+  if (sessions >= 20) {
+    milestone = `<text x="11" y="15" text-anchor="middle" font-size="9" fill="white" font-weight="bold">★</text>`;
+  } else if (sessions >= 15) {
+    milestone = `<circle cx="11" cy="11" r="5.5" fill="none" stroke="white" stroke-width="1.8"/>`;
   }
 
   return L.divIcon({
     html: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="32" viewBox="0 0 22 32">
       <path d="M11 0C5.48 0 1 4.48 1 10c0 7.75 10 22 10 22S21 17.75 21 10C21 4.48 16.52 0 11 0z" fill="${bodyColor}" stroke="white" stroke-width="1.5"/>
-      ${star}
+      <circle cx="11" cy="11" r="4" fill="${dotColor}"/>
+      ${milestone}
     </svg>`,
     className: '', iconSize: [22, 32], iconAnchor: [11, 32], popupAnchor: [0, -32]
   });
@@ -332,8 +335,8 @@ function programBadge(prog) {
 }
 
 function milestoneBadge(sessions) {
-  if (sessions >= 15) return `<div class="popup-milestone">🌟 ${sessions} sessions — milestone trainer!</div>`;
-  if (sessions >= 10) return `<div class="popup-milestone">⭐ ${sessions} sessions</div>`;
+  if (sessions >= 20) return `<div class="popup-milestone">🌟 ${sessions} sessions — milestone trainer!</div>`;
+  if (sessions >= 15) return `<div class="popup-milestone">⭐ ${sessions} sessions</div>`;
   return '';
 }
 
@@ -384,14 +387,9 @@ async function loadData() {
       if (!name) return;
       const priorLead = parseFloat(row['Prior Years (Lead)'] || 0) || 0;
       const priorCo   = parseFloat(row['Prior Years (Co)']  || 0) || 0;
-      // Sum all YTD monthly columns (D onward, both lead and co)
-      let ytd = 0;
-      Object.keys(row).forEach(k => {
-        if (k !== 'Trainer' && k !== 'Prior Years (Lead)' && k !== 'Prior Years (Co)') {
-          ytd += parseFloat(row[k] || 0) || 0;
-        }
-      });
-      sessionMap[name.toLowerCase()] = priorLead + priorCo + ytd;
+      // YTD Total is in column AD — header is 'YTD Total'
+      const ytdTotal  = parseFloat(row['YTD Total'] || 0) || 0;
+      sessionMap[name.toLowerCase()] = priorLead + priorCo + ytdTotal;
     });
   }
 
@@ -531,7 +529,7 @@ function render() {
       <div class="popup-badges">
         ${programBadge(prog)}
         ${t.ss_cohort ? `<span class="badge badge-cohort">Cohort ${t.ss_cohort}</span>` : ''}
-        ${t.olley_cohort && t.olley_cohort !== t.ss_cohort ? `<span class="badge badge-cohort">Olley C${t.olley_cohort}</span>` : ''}
+        ${t.olley_cohort && t.olley_cohort !== t.ss_cohort ? `<span class="badge badge-cohort">Olley Cohort ${t.olley_cohort}</span>` : ''}
       </div>
       <div class="popup-update">${updateLink}</div>
     </div>`, { maxWidth: 280 });
@@ -548,16 +546,16 @@ function render() {
     const div = document.createElement('div');
     div.className = 'trainer-card' + (t.id === selectedId ? ' selected' : '');
     div.id = `card-${t.id}`;
-    const milestoneBadgeHtml = t.lifetimeSessions >= 15 ? '<span class="badge badge-milestone">🌟 15+ sessions</span>' :
-                               t.lifetimeSessions >= 10 ? '<span class="badge badge-milestone">⭐ 10+ sessions</span>' : '';
+    const milestoneBadgeHtml = t.lifetimeSessions >= 20 ? '<span class="badge badge-milestone">🌟 20+ sessions</span>' :
+                               t.lifetimeSessions >= 15 ? '<span class="badge badge-milestone">⭐ 15+ sessions</span>' : '';
     div.innerHTML = `
       <div class="tc-name">${t.fullName}</div>
-      <div class="tc-location">${t.city}${t.state ? ', '+t.state : ''}</div>
       ${t.org ? `<div class="tc-org">${t.org}</div>` : ''}
+      <div class="tc-location">${t.city}${t.state ? ', '+t.state : ''}</div>
       ${t.phone ? `<div class="tc-org" style="color:#888;">${t.phone}</div>` : ''}
       <div class="tc-badges">
         ${programBadge(prog)}
-        ${t.ss_cohort ? `<span class="badge badge-cohort">C${t.ss_cohort}</span>` : ''}
+        ${t.ss_cohort ? `<span class="badge badge-cohort">Cohort ${t.ss_cohort}</span>` : ''}
         ${certBadge(prog === 'olley' ? t.olley_status : t.ss_status)}
         ${milestoneBadgeHtml}
       </div>`;
