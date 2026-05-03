@@ -182,8 +182,8 @@ body { font-family: 'Lato', 'Segoe UI', Arial, sans-serif; background: #f5f0e6; 
   <div class="legend-item"><span class="legend-dot" style="background:#0ba5a5"></span> Olley certified</div>
   <div class="legend-item"><span class="legend-dot" style="background:#fdb813"></span> Both programs</div>
   <span style="margin-left:8px; font-weight:700; font-size:0.7rem; color:#444;">Milestones:</span>
-  <div class="legend-item">⭐ 15+ sessions</div>
-  <div class="legend-item">🌟 20+ sessions</div>
+  <div class="legend-item">⭐ 10+ sessions</div>
+  <div class="legend-item">🌟 15+ sessions</div>
 </div>
 
 <div id="main">
@@ -303,9 +303,9 @@ function pinIcon(trainer) {
   if (prog === 'olley') dotColor = '#ffffff';
 
   let milestone = '';
-  if (sessions >= 20) {
+  if (sessions >= 15) {
     milestone = `<text x="11" y="15" text-anchor="middle" font-size="9" fill="white" font-weight="bold">★</text>`;
-  } else if (sessions >= 15) {
+  } else if (sessions >= 10) {
     milestone = `<circle cx="11" cy="11" r="5.5" fill="none" stroke="white" stroke-width="1.8"/>`;
   }
 
@@ -335,8 +335,8 @@ function programBadge(prog) {
 }
 
 function milestoneBadge(sessions) {
-  if (sessions >= 20) return `<div class="popup-milestone">🌟 ${sessions} sessions — milestone trainer!</div>`;
-  if (sessions >= 15) return `<div class="popup-milestone">⭐ ${sessions} sessions</div>`;
+  if (sessions >= 15) return `<div class="popup-milestone">🌟 ${sessions} sessions — milestone trainer!</div>`;
+  if (sessions >= 10) return `<div class="popup-milestone">⭐ ${sessions} sessions</div>`;
   return '';
 }
 
@@ -395,6 +395,8 @@ async function loadData() {
 
   // Parse roster
   const rosterRows = parseCSV(rosterText);
+  // Debug: log column headers once so we can verify Olley column name
+  if (rosterRows.length > 0) console.log('Roster columns:', Object.keys(rosterRows[0]).join(' | '));
   const cohortSet = new Set();
   const stateSet = new Set();
 
@@ -433,7 +435,7 @@ async function loadData() {
         ss_status:    (row['S/S Certification status'] || row['SS_Certification_Status'] || row['Certification status'] || '').trim(),
         ss_cohort:    cohort,
         ss_date:      (row['S/S Date Certified'] || row['SS_Date_Certified'] || row['Date Certified'] || '').trim(),
-        olley_status: (row['Olley Certification Status'] || row['Olley_Certification_Status'] || '').trim(),
+        olley_status: (row['Olley Certification Status'] || row['Olley Certification status'] || row['Olley_Certification_Status'] || row['Olley Cert Status'] || row['Olley certification status'] || '').trim(),
         olley_cohort: olleyCohort,
         olley_date:   (row['Olley Date Certified'] || row['Olley_Date_Certified'] || '').trim(),
         lat: geo.lat, lng: geo.lng,
@@ -522,17 +524,7 @@ function render() {
       <div class="popup-name">${displayName}</div>
       ${t.org ? `<div class="popup-row">${t.org}</div>` : ''}
       <div class="popup-row">${t.city}${t.state ? ', ' + t.state : ''}</div>
-      <div class="popup-row"><strong>Email:</strong> ${emailHtml}</div>
-      ${t.phone ? `<div class="popup-row"><strong>Phone:</strong> ${t.phone}</div>` : ''}
-      ${certRows}
-      ${milestoneBadge(t.lifetimeSessions)}
-      <div class="popup-badges">
-        ${programBadge(prog)}
-        ${t.ss_cohort ? `<span class="badge badge-cohort">Cohort ${t.ss_cohort}</span>` : ''}
-        ${t.olley_cohort && t.olley_cohort !== t.ss_cohort ? `<span class="badge badge-cohort">Olley Cohort ${t.olley_cohort}</span>` : ''}
-      </div>
-      <div class="popup-update">${updateLink}</div>
-    </div>`, { maxWidth: 280 });
+    </div>`, { maxWidth: 240 });
 
     m.on('click', () => selectTrainer(t.id, false));
     m.addTo(map);
@@ -546,8 +538,8 @@ function render() {
     const div = document.createElement('div');
     div.className = 'trainer-card' + (t.id === selectedId ? ' selected' : '');
     div.id = `card-${t.id}`;
-    const milestoneBadgeHtml = t.lifetimeSessions >= 20 ? '<span class="badge badge-milestone">🌟 20+ sessions</span>' :
-                               t.lifetimeSessions >= 15 ? '<span class="badge badge-milestone">⭐ 15+ sessions</span>' : '';
+    const milestoneBadgeHtml = t.lifetimeSessions >= 15 ? '<span class="badge badge-milestone">🌟 15+ sessions</span>' :
+                               t.lifetimeSessions >= 10 ? '<span class="badge badge-milestone">⭐ 10+ sessions</span>' : '';
     div.innerHTML = `
       <div class="tc-name">${t.fullName}</div>
       ${t.org ? `<div class="tc-org">${t.org}</div>` : ''}
