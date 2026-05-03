@@ -9,73 +9,32 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Lato', 'Segoe UI', Arial, sans-serif; background: #f5f0e6; color: #222b54; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-#header {
-  background: white; color: #222b54; padding: 0 22px; height: 52px;
-  display: flex; align-items: center; gap: 16px; flex-shrink: 0;
-  border-bottom: 1px solid #e0dbce;
-}
-#header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px; color: #222b54; }
-
-#controls {
-  background: white; padding: 9px 20px; display: flex; gap: 14px;
-  align-items: center; flex-shrink: 0; flex-wrap: wrap;
-  border-bottom: 2px solid #e0dbce;
-}
+body { font-family: 'Lato', Arial, sans-serif; background: #f5f0e6; color: #222b54; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+#header { background: white; padding: 0 22px; height: 52px; display: flex; align-items: center; border-bottom: 1px solid #e0dbce; }
+#header h1 { font-size: 1.05rem; font-weight: 700; color: #222b54; }
+#controls { background: white; padding: 9px 20px; display: flex; gap: 14px; align-items: center; flex-shrink: 0; flex-wrap: wrap; border-bottom: 2px solid #e0dbce; }
 .filter-group { display: flex; gap: 5px; align-items: center; }
 .filter-label { color: #888; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-right: 3px; }
-.filter-btn {
-  background: transparent; border: 1.5px solid #ccc; color: #555;
-  border-radius: 14px; padding: 4px 13px; font-size: 0.71rem; cursor: pointer; transition: all 0.15s;
-}
+.filter-btn { background: transparent; border: 1.5px solid #ccc; color: #555; border-radius: 14px; padding: 4px 13px; font-size: 0.71rem; cursor: pointer; transition: all 0.15s; font-family: 'Lato', Arial, sans-serif; }
 .filter-btn:hover { border-color: #fdb813; color: #222b54; }
 .filter-btn.active { background: #fdb813; border-color: #fdb813; color: #222b54; font-weight: 700; }
-.filter-btn.active.ss { background: #222b54; border-color: #222b54; color: white; }
-.filter-btn.active.olley { background: #0ba5a5; border-color: #0ba5a5; color: white; }
-.filter-btn.active.both { background: #fdb813; border-color: #fdb813; color: #222b54; }
-.filter-select {
-  background: transparent; border: 1.5px solid #ccc; color: #555;
-  border-radius: 14px; padding: 4px 13px; font-size: 0.71rem; cursor: pointer;
-  font-family: 'Lato', sans-serif; transition: all 0.15s;
-}
+.filter-select { background: transparent; border: 1.5px solid #ccc; color: #555; border-radius: 14px; padding: 4px 13px; font-size: 0.71rem; cursor: pointer; font-family: 'Lato', Arial, sans-serif; }
 .filter-select:focus { outline: none; border-color: #fdb813; }
-
 #search-wrap { margin-left: auto; position: relative; display: flex; align-items: center; }
-#search-box {
-  background: #f5f5f5; border: 1.5px solid #ccc; border-radius: 14px;
-  padding: 4px 30px 4px 14px; color: #222b54; font-size: 0.72rem; width: 195px;
-}
+#search-box { background: #f5f5f5; border: 1.5px solid #ccc; border-radius: 14px; padding: 4px 30px 4px 14px; color: #222b54; font-size: 0.72rem; width: 195px; font-family: 'Lato', Arial, sans-serif; }
 #search-box:focus { outline: none; border-color: #fdb813; background: white; }
-#search-clear {
-  position: absolute; right: 8px; background: none; border: none; color: #aaa;
-  cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 2px; display: none;
-}
-
+#search-clear { position: absolute; right: 8px; background: none; border: none; color: #aaa; cursor: pointer; font-size: 0.85rem; display: none; }
+#legend { display: flex; gap: 12px; align-items: center; padding: 6px 20px; background: white; border-bottom: 1px solid #e0dbce; flex-wrap: wrap; font-size: 0.68rem; color: #555; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 #main { display: flex; flex: 1; overflow: hidden; }
-#map { flex: 1; }
-#sidebar {
-  width: 270px; background: white; display: flex; flex-direction: column;
-  border-left: 1px solid #ddd; flex-shrink: 0;
-}
-#sidebar-header {
-  background: #222b54; color: white; padding: 8px 13px; font-size: 0.75rem;
-  font-weight: 700; display: flex; justify-content: space-between; align-items: center;
-  flex-shrink: 0; gap: 8px;
-}
-#sidebar-header-left { display: flex; align-items: center; gap: 6px; }
+#map { flex: 1; position: relative; }
+#sidebar { width: 270px; background: white; display: flex; flex-direction: column; border-left: 1px solid #ddd; flex-shrink: 0; }
+#sidebar-header { background: #222b54; color: white; padding: 8px 13px; font-size: 0.75rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
 #trainer-count { color: #fdb813; font-size: 0.85rem; }
-#print-btn {
-  background: #0ba5a5; border: none; border-radius: 10px; color: white;
-  font-size: 0.65rem; font-weight: 700; padding: 3px 9px; cursor: pointer;
-  white-space: nowrap; display: flex; align-items: center; gap: 4px; transition: background 0.15s;
-}
-#print-btn:hover { background: #089090; }
+#print-btn { background: #0ba5a5; border: none; border-radius: 10px; color: white; font-size: 0.65rem; font-weight: 700; padding: 3px 9px; cursor: pointer; }
 #trainer-list { overflow-y: auto; flex: 1; }
-
-.trainer-card {
-  padding: 8px 12px; border-bottom: 1px solid #f2efe8; cursor: pointer; transition: background 0.1s;
-}
+.trainer-card { padding: 8px 12px; border-bottom: 1px solid #f2efe8; cursor: pointer; transition: background 0.1s; }
 .trainer-card:hover { background: #faf8f4; }
 .trainer-card.selected { background: #e6f4f4; border-left: 3px solid #0ba5a5; padding-left: 9px; }
 .tc-name { font-weight: 700; font-size: 0.81rem; color: #222b54; }
@@ -83,66 +42,37 @@ body { font-family: 'Lato', 'Segoe UI', Arial, sans-serif; background: #f5f0e6; 
 .tc-org { font-size: 0.68rem; color: #0ba5a5; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tc-badges { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 .badge { font-size: 0.61rem; padding: 1px 7px; border-radius: 10px; font-weight: 600; line-height: 1.6; }
-.badge-cohort   { background: #ebe8f5; color: #4a3580; }
-.badge-full     { background: #d8f0dd; color: #1a6632; }
-.badge-prov     { background: #fef3cd; color: #7a5700; }
+.badge-cohort { background: #ebe8f5; color: #4a3580; }
+.badge-full { background: #d8f0dd; color: #1a6632; }
+.badge-prov { background: #fef3cd; color: #7a5700; }
 .badge-inactive { background: #e8e8ea; color: #555; }
-.badge-ss       { background: #e8eaf6; color: #222b54; }
-.badge-olley    { background: #e0f7f7; color: #0ba5a5; }
-.badge-both     { background: #fff8e1; color: #b8860b; }
+.badge-ss { background: #e8eaf6; color: #222b54; }
+.badge-olley { background: #e0f7f7; color: #0b8a8a; }
+.badge-both { background: #fff8e1; color: #b8860b; }
 .badge-milestone { background: #fff3cd; color: #856404; }
-
-#legend {
-  display: flex; gap: 12px; align-items: center; padding: 6px 20px;
-  background: white; border-bottom: 1px solid #e0dbce; flex-wrap: wrap; font-size: 0.68rem; color: #555;
-}
-.legend-item { display: flex; align-items: center; gap: 5px; }
-.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-
-#loading-overlay {
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(255,255,255,0.9); display: flex; flex-direction: column;
-  align-items: center; justify-content: center; z-index: 9999; gap: 12px;
-}
-.spinner {
-  width: 36px; height: 36px; border: 4px solid #e0dbce;
-  border-top: 4px solid #222b54; border-radius: 50%; animation: spin 0.8s linear infinite;
-}
+#loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 12px; }
+.spinner { width: 36px; height: 36px; border: 4px solid #e0dbce; border-top: 4px solid #222b54; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
 .leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 3px 16px rgba(0,0,0,0.15); padding: 0; overflow: hidden; }
 .leaflet-popup-content { margin: 0; }
-.popup-inner { padding: 12px 14px; }
-.popup-name { font-weight: 800; font-size: 0.92rem; color: #222b54; margin-bottom: 2px; }
-.popup-pronouns { font-size: 0.72rem; color: #888; margin-bottom: 6px; font-style: italic; }
-.popup-row { font-size: 0.77rem; margin-bottom: 3px; color: #444; line-height: 1.4; }
-.popup-row strong { color: #222b54; }
-.popup-row a { color: #0ba5a5; text-decoration: none; }
-.popup-row a:hover { text-decoration: underline; }
-.popup-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 7px; }
-.popup-milestone { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 4px 8px; font-size: 0.72rem; color: #856404; margin-top: 6px; font-weight: 700; }
-.popup-update { margin-top: 9px; padding-top: 8px; border-top: 1px solid #eee; }
-.popup-update-link { font-size: 0.74rem; color: #222b54; text-decoration: none; font-weight: 600; opacity: 0.65; transition: opacity 0.15s; }
-.popup-update-link:hover { opacity: 1; text-decoration: underline; }
-
+.popup-inner { padding: 12px 14px; min-width: 160px; }
+.popup-name { font-weight: 800; font-size: 0.92rem; color: #222b54; margin-bottom: 3px; }
+.popup-row { font-size: 0.77rem; margin-bottom: 2px; color: #444; }
+#hover-tooltip { position: fixed; background: #222b54; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; pointer-events: none; z-index: 99999; display: none; transform: translate(-50%, -100%); margin-top: -8px; font-family: 'Lato', Arial, sans-serif; }
+#hover-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #222b54; }
 @media print {
   body { overflow: visible; height: auto; }
-  #header, #controls, #legend, #map, #print-btn, #loading-overlay { display: none !important; }
+  #header, #controls, #legend, #map, #print-btn, #loading-overlay, #hover-tooltip { display: none !important; }
   #main { display: block; }
   #sidebar { width: 100%; border: none; display: block; }
-  #sidebar-header { background: #222b54 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 10px 16px; font-size: 0.9rem; }
+  #sidebar-header { background: #222b54 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   #trainer-list { overflow: visible; }
-  .trainer-card { page-break-inside: avoid; border-bottom: 1px solid #ddd; padding: 7px 16px; }
-  .trainer-card:hover, .trainer-card.selected { background: white !important; border-left: none !important; padding-left: 16px !important; }
+  .trainer-card { page-break-inside: avoid; }
 }
 </style>
 </head>
 <body>
-
-<div id="header">
-  <h1>Support Over Silence — Certified Trainers Network</h1>
-</div>
-
+<div id="header"><h1>Support Over Silence — Certified Trainers Network</h1></div>
 <div id="controls">
   <div class="filter-group">
     <span class="filter-label">Program:</span>
@@ -160,71 +90,49 @@ body { font-family: 'Lato', 'Segoe UI', Arial, sans-serif; background: #f5f0e6; 
   </div>
   <div class="filter-group">
     <span class="filter-label">Cohort:</span>
-    <select id="cohort-filter" class="filter-select">
-      <option value="all">All cohorts</option>
-    </select>
+    <select id="cohort-filter" class="filter-select"><option value="all">All cohorts</option></select>
   </div>
   <div class="filter-group">
     <span class="filter-label">State:</span>
-    <select id="state-filter" class="filter-select">
-      <option value="all">All states</option>
-    </select>
+    <select id="state-filter" class="filter-select"><option value="all">All states</option></select>
   </div>
   <div id="search-wrap">
     <input type="text" id="search-box" placeholder="Search name, city, org…">
-    <button id="search-clear" title="Clear">✕</button>
+    <button id="search-clear">✕</button>
   </div>
 </div>
-
 <div id="legend">
-  <span style="font-weight:700; font-size:0.7rem; color:#444;">Pin colors:</span>
+  <span style="font-weight:700;font-size:0.7rem;color:#444;">Pin colors:</span>
   <div class="legend-item"><span class="legend-dot" style="background:#222b54"></span> S/S certified</div>
   <div class="legend-item"><span class="legend-dot" style="background:#0ba5a5"></span> Olley certified</div>
   <div class="legend-item"><span class="legend-dot" style="background:#fdb813"></span> Both programs</div>
-  <span style="margin-left:8px; font-weight:700; font-size:0.7rem; color:#444;">Milestones:</span>
+  <span style="margin-left:8px;font-weight:700;font-size:0.7rem;color:#444;">Milestones:</span>
   <div class="legend-item">⭐ 10+ sessions</div>
   <div class="legend-item">🌟 15+ sessions</div>
 </div>
-
 <div id="main">
   <div id="map">
     <div id="loading-overlay">
       <div class="spinner"></div>
-      <div style="font-size:0.85rem; color:#555;">Loading trainer data…</div>
+      <div style="font-size:0.85rem;color:#555;">Loading trainer data…</div>
     </div>
   </div>
   <div id="sidebar">
     <div id="sidebar-header">
-      <div id="sidebar-header-left">
-        <span>Directory</span>
-        <span id="trainer-count">—</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span>Directory</span><span id="trainer-count">—</span>
       </div>
       <button id="print-btn" onclick="printDirectory()">⬇ Download / Print</button>
     </div>
     <div id="trainer-list"></div>
   </div>
 </div>
+<div id="hover-tooltip"></div>
 
-<div id="trainer-tooltip" class="trainer-tooltip"></div>
 <script>
-const SHEET_ID   = '1vMfqzcLq_cZzn7GTm3G2WFWlHOWwcMMpWyARvEY-xf0';
-const SHEET_PUB  = '2PACX-1vQYFHCeD4E7YtkHrKALhLQTWF6TORK5KxJ2UFgJLd_glWXfGNcJf5EqufCcM6bogtErGu1EI21nNJL6';
+const SHEET_ID  = '1vMfqzcLq_cZzn7GTm3G2WFWlHOWwcMMpWyARvEY-xf0';
 const ROSTER_GID  = '184179872';
 const SUMMARY_GID = '1394624129';
-
-const NAME_CORRECTIONS = {
-  'sonya grey': 'Sonja Grey',
-  'karisma morris bush': 'Karisma Morris-Bush',
-  'melianie madison': 'Melanie Madison',
-  'andy bernert ': 'Andy Bernert',
-  'maureen sollars ': 'Maureen Sollars',
-};
-
-function normalizeName(n) {
-  if (!n) return '';
-  const lower = n.trim().toLowerCase().replace(/\s+/g, ' ');
-  return NAME_CORRECTIONS[lower] || n.trim().replace(/\s+/g, ' ');
-}
 
 const CITY_COORDS = {
   'Des Peres_MO':[38.6031,-90.4329],'St. Louis_MO':[38.6270,-90.1994],
@@ -240,145 +148,119 @@ const CITY_COORDS = {
   'Taylorsville_KY':[38.0320,-85.3441],'Brownsville_KY':[37.1948,-86.2683],
   'Bloomington_IL':[40.4842,-88.9937],'Normal_IL':[40.5142,-88.9906],
   'Erlanger_KY':[39.0165,-84.5996],'Newport_KY':[39.0917,-84.4960],
-  'Alexandria_KY':[38.9601,-84.3877],'Mayfield_KY':[36.7418,-88.6367],
-  'Hopkinsville_KY':[36.8656,-87.4886],'McKee_KY':[37.4318,-83.9935],
-  'Bardstown_KY':[37.8090,-85.4669],'Crestview Hills_KY':[39.0243,-84.5958],
-  'Cincinnati_OH':[39.1031,-84.5120],'Maplewood_MO':[38.6133,-90.3265],
-  'Hazard_KY':[37.2495,-83.1932],'Hardin_KY':[36.7668,-88.3225],
 };
 
-function geoForTrainer(city, state, idx) {
-  const jLat = (idx % 7 - 3) * 0.008;
-  const jLng = (idx % 5 - 2) * 0.010;
-  const key = city + '_' + state;
-  if (CITY_COORDS[key]) return { lat: CITY_COORDS[key][0] + jLat, lng: CITY_COORDS[key][1] + jLng };
-  return { lat: 38.2527 + jLat, lng: -85.7585 + jLng };
+function geo(city, state, idx) {
+  const jLat = (idx % 7 - 3) * 0.008, jLng = (idx % 5 - 2) * 0.010;
+  const c = CITY_COORDS[city + '_' + state];
+  return c ? { lat: c[0]+jLat, lng: c[1]+jLng } : { lat: 38.2527+jLat, lng: -85.7585+jLng };
+}
+
+function fmtPhone(p) {
+  if (!p) return '';
+  const d = p.replace(/\D/g,'');
+  if (d.length===10) return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);
+  if (d.length===11&&d[0]==='1') return d.slice(1,4)+'-'+d.slice(4,7)+'-'+d.slice(7);
+  return p;
 }
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
-  const headers = parseCSVLine(lines[0]);
-  return lines.slice(1).filter(l => l.trim()).map(line => {
-    const vals = parseCSVLine(line);
-    const obj = {};
-    headers.forEach((h, i) => obj[h.trim()] = (vals[i] || '').trim());
+  const headers = splitLine(lines[0]);
+  return lines.slice(1).filter(l=>l.trim()).map(line => {
+    const vals = splitLine(line), obj = {};
+    headers.forEach((h,i) => obj[h.trim()] = (vals[i]||'').trim());
     return obj;
   });
 }
 
-function parseCSVLine(line) {
-  const vals = []; let cur = '', inQ = false;
+function splitLine(line) {
+  const vals=[]; let cur='', inQ=false;
   for (const c of line) {
-    if (c === '"') { inQ = !inQ; }
-    else if (c === ',' && !inQ) { vals.push(cur); cur = ''; }
-    else cur += c;
+    if (c==='"') inQ=!inQ;
+    else if (c===','&&!inQ) { vals.push(cur); cur=''; }
+    else cur+=c;
   }
   vals.push(cur);
   return vals;
 }
 
-function formatPhone(p) {
-  if (!p) return '';
-  const d = p.replace(/\D/g, '');
-  if (d.length === 10) return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`;
-  if (d.length === 11 && d[0] === '1') return `${d.slice(1,4)}-${d.slice(4,7)}-${d.slice(7)}`;
-  return p;
-}
-
 function programType(t) {
-  const ssVal = (t.ss_status || '').trim().toLowerCase();
-  const olleyVal = (t.olley_status || '').trim().toLowerCase();
-  const hasss    = ssVal !== '' && ssVal !== 'not active';
-  const hasolley = olleyVal !== '' && olleyVal !== 'not active';
-  if (hasss && hasolley) return 'both';
-  if (hasolley) return 'olley';
+  const ss    = (t.ss_status||'').trim().toLowerCase();
+  const olley = (t.olley_status||'').trim().toLowerCase();
+  const hasSS    = ss !== '' && ss !== 'not active';
+  const hasOlley = olley !== '' && olley !== 'not active';
+  if (hasSS && hasOlley) return 'both';
+  if (hasOlley) return 'olley';
   return 'ss';
 }
 
-function pinIcon(trainer) {
-  const prog = programType(trainer);
-  const sessions = trainer.lifetimeSessions || 0;
+function pinIcon(t) {
+  const prog = programType(t);
+  const n = t.lifetimeSessions || 0;
 
-  // Pin body color
-  let bodyColor = '#222b54'; // S/S = navy
-  if (prog === 'olley') bodyColor = '#0ba5a5'; // Olley = teal
-  if (prog === 'both')  bodyColor = '#222b54'; // Both = navy body, gold dot signals both
+  // Body color
+  let body = '#222b54';
+  if (prog === 'olley') body = '#0ba5a5';
+  if (prog === 'both')  body = '#fdb813';
 
-  // Center dot
-  let dotColor = '#fdb813'; // gold for SS and Both
-  if (prog === 'olley') dotColor = '#ffffff'; // white for Olley-only
+  // Center dot color
+  let dot = prog === 'both' ? '#222b54' : prog === 'olley' ? '#ffffff' : '#fdb813';
 
-  // Milestone indicators — drawn INSIDE pin, replacing the simple dot
-  // 10-14 sessions: small ring around dot
-  // 15+: star replaces dot
-  let inner = `<circle cx="11" cy="11" r="3.5" fill="${dotColor}"/>`;
-  if (sessions >= 15) {
-    inner = `<text x="11" y="15" text-anchor="middle" font-size="10" fill="white">★</text>`;
-  } else if (sessions >= 10) {
-    inner = `<circle cx="11" cy="11" r="3.5" fill="${dotColor}"/>
-      <circle cx="11" cy="11" r="6" fill="none" stroke="${dotColor}" stroke-width="1.5" opacity="0.7"/>`;
+  // Milestone overlay inside pin
+  let inner = '';
+  if (n >= 15) {
+    // Star replaces dot
+    inner = `<text x="11" y="15" text-anchor="middle" font-size="11" fill="white" font-family="Arial">&#9733;</text>`;
+  } else if (n >= 10) {
+    // Dot + ring
+    inner = `<circle cx="11" cy="11" r="3" fill="${dot}"/><circle cx="11" cy="11" r="6" fill="none" stroke="${dot}" stroke-width="1.5"/>`;
+  } else {
+    inner = `<circle cx="11" cy="11" r="3.5" fill="${dot}"/>`;
   }
 
   return L.divIcon({
     html: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="32" viewBox="0 0 22 32">
-      <path d="M11 0C5.48 0 1 4.48 1 10c0 7.75 10 22 10 22S21 17.75 21 10C21 4.48 16.52 0 11 0z" fill="${bodyColor}" stroke="white" stroke-width="1.5"/>
+      <path d="M11 0C5.48 0 1 4.48 1 10c0 7.75 10 22 10 22S21 17.75 21 10C21 4.48 16.52 0 11 0z" fill="${body}" stroke="white" stroke-width="1.5"/>
       ${inner}
     </svg>`,
-    className: '', iconSize: [22, 32], iconAnchor: [11, 32], popupAnchor: [0, -32]
+    className:'', iconSize:[22,32], iconAnchor:[11,32], popupAnchor:[0,-32]
   });
 }
 
-function certBadge(status) {
-  if (!status || status === '') return '';
-  const s = status.toLowerCase();
-  if (s === 'full') return '<span class="badge badge-full">Full</span>';
-  if (s === 'provisional') return '<span class="badge badge-prov">Provisional</span>';
-  if (s === 'not active') return '<span class="badge badge-inactive">Not Active</span>';
+function certBadge(s) {
+  if (!s) return '';
+  const l = s.toLowerCase();
+  if (l==='full') return '<span class="badge badge-full">Full</span>';
+  if (l==='provisional') return '<span class="badge badge-prov">Provisional</span>';
+  if (l==='not active') return '<span class="badge badge-inactive">Not Active</span>';
   return '';
 }
 
-function programBadge(prog) {
-  if (prog === 'both') return '<span class="badge badge-both">S/S + Olley</span>';
-  if (prog === 'olley') return '<span class="badge badge-olley">Olley</span>';
+function progBadge(p) {
+  if (p==='both')  return '<span class="badge badge-both">S/S + Olley</span>';
+  if (p==='olley') return '<span class="badge badge-olley">Olley</span>';
   return '<span class="badge badge-ss">S/S</span>';
 }
 
-function milestoneBadge(sessions) {
-  if (sessions >= 15) return `<div class="popup-milestone">🌟 ${sessions} sessions — milestone trainer!</div>`;
-  if (sessions >= 10) return `<div class="popup-milestone">⭐ ${sessions} sessions</div>`;
-  return '';
-}
+let trainers=[], filters={program:'all',status:'all',cohort:'all',state:'all',search:''}, selectedId=null, markers={};
 
-let trainers = [];
-let filters = { program: 'all', status: 'all', cohort: 'all', state: 'all', search: '' };
-let selectedId = null;
-let markers = {};
-
-const map = L.map('map', { center: [38.6, -85.8], zoom: 7 });
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-  subdomains: 'abcd', maxZoom: 19
+const map = L.map('map',{center:[38.6,-85.8],zoom:7});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19
 }).addTo(map);
-
 fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
-  .then(r => r.json())
-  .then(data => { L.geoJSON(data, { style: { color: '#7a8bbf', weight: 1.2, fillOpacity: 0 } }).addTo(map); })
-  .catch(() => {});
+  .then(r=>r.json()).then(d=>L.geoJSON(d,{style:{color:'#7a8bbf',weight:1.2,fillOpacity:0}}).addTo(map)).catch(()=>{});
 
 async function fetchCSV(gid) {
-  // gviz works reliably for sheets shared with "Anyone with the link"
   const urls = [
     `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`,
-    `https://docs.google.com/spreadsheets/d/e/${SHEET_PUB}/pub?gid=${gid}&single=true&output=csv`,
     `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?gid=${gid}&single=true&output=csv`,
   ];
   for (const url of urls) {
     try {
       const r = await fetch(url);
-      if (r.ok) {
-        const t = await r.text();
-        if (t.length > 50 && !t.includes('<!DOCTYPE')) return t;
-      }
+      if (r.ok) { const t = await r.text(); if (t.length>50 && !t.includes('<!DOCTYPE')) return t; }
     } catch {}
   }
   throw new Error('Load failed');
@@ -387,176 +269,128 @@ async function fetchCSV(gid) {
 async function loadData() {
   const [rosterText, summaryText] = await Promise.all([
     fetchCSV(ROSTER_GID),
-    fetchCSV(SUMMARY_GID).catch(() => ''),
+    fetchCSV(SUMMARY_GID).catch(()=>''),
   ]);
 
-  // Parse summary for session counts
+  // Build session count map from summary: col B (Prior Years Lead) + col C (Prior Years Co) + col AD (YTD Total)
   const sessionMap = {};
   if (summaryText) {
-    const summaryRows = parseCSV(summaryText);
-    summaryRows.forEach(row => {
-      const name = normalizeName(row['Trainer'] || '');
+    parseCSV(summaryText).forEach(row => {
+      const name = (row['Trainer']||'').trim().toLowerCase();
       if (!name) return;
-      const priorLead = parseFloat(row['Prior Years (Lead)'] || 0) || 0;
-      const priorCo   = parseFloat(row['Prior Years (Co)']  || 0) || 0;
-      // YTD Total is in column AD — header is 'YTD Total'
-      const ytdTotal  = parseFloat(row['YTD Total'] || 0) || 0;
-      sessionMap[name.toLowerCase()] = priorLead + priorCo + ytdTotal;
+      const b = parseFloat(row['Prior Years (Lead)']||0)||0;
+      const c = parseFloat(row['Prior Years (Co)']||0)||0;
+      const ad = parseFloat(row['YTD Total']||0)||0;
+      sessionMap[name] = b + c + ad;
     });
   }
 
-  // Parse roster
+  const cohortSet=new Set(), stateSet=new Set();
   const rosterRows = parseCSV(rosterText);
-  // Debug: log column headers once so we can verify Olley column name
-  if (rosterRows.length > 0) {
-    console.log('Roster columns:', Object.keys(rosterRows[0]).join(' | '));
-  }
-  const cohortSet = new Set();
-  const stateSet = new Set();
+  console.log('Roster columns:', Object.keys(rosterRows[0]||{}).join(' | '));
 
-  trainers = rosterRows
-    .filter(r => (r['Trainer First Name'] || '').trim())
-    .map((row, idx) => {
-      const firstName = (row['Trainer First Name'] || '').trim();
-      const lastName  = (row['Trainer Last Name']  || '').trim();
-      const fullName  = normalizeName(firstName + ' ' + lastName);
-      const city      = (row['City']  || '').trim();
-      const state     = (row['State'] || '').trim();
-      const cohort    = (row['S/S Cohort']   || row['Cohort'] || '').toString().trim();
-      const olleyCohort = (row['Olley Cohort'] || '').toString().trim();
+  trainers = rosterRows.filter(r=>(r['Trainer First Name']||'').trim()).map((row,idx) => {
+    const first = (row['Trainer First Name']||'').trim();
+    const last  = (row['Trainer Last Name']||'').trim();
+    const full  = (first+' '+last).trim();
+    const city  = (row['City']||'').trim();
+    const state = (row['State']||'').trim();
+    const ssCohort    = (row['S/S Cohort']||'').toString().trim();
+    const olleyCohort = (row['Olley Cohort']||'').toString().trim();
+    const ssStatus    = (row['S/S Certification status']||'').trim();
+    const olleyStatus = (row['Olley Certification Status']||row['Olley Certification status']||'').trim();
 
-      if (city && state) stateSet.add(state);
-      if (cohort) cohortSet.add(cohort);
-      if (olleyCohort && olleyCohort !== cohort) cohortSet.add(olleyCohort);
+    if (city&&state) stateSet.add(state);
+    if (ssCohort) cohortSet.add(ssCohort);
+    if (olleyCohort&&olleyCohort!==ssCohort) cohortSet.add(olleyCohort);
 
-      const geo = geoForTrainer(city, state, idx);
-      const sessions = sessionMap[fullName.toLowerCase()] || 0;
+    const g = geo(city, state, idx);
+    const sessions = sessionMap[full.toLowerCase()] || 0;
 
-      return {
-        id: idx,
-        fullName,
-        firstName,
-        lastName,
-        salutation:   (row['Salutation']   || '').trim(),
-        pronouns:     (row['Pronouns']      || '').trim(),
-        jobTitle:     (row['Job Title']     || '').trim(),
-        org:          (row['Organization']  || '').trim(),
-        phone:        formatPhone((row['Phone'] || '').trim()),
-        email:        (row['Email']         || '').trim(),
-        city, state,
-        zip:          (row['Zip Code']      || '').trim(),
-        trainerId:    (row['Trainer ID']    || '').trim(),
-        ss_status:    (row['S/S Certification status'] || row['SS_Certification_Status'] || row['Certification status'] || '').trim(),
-        ss_cohort:    cohort,
-        ss_date:      (row['S/S Date Certified'] || row['SS_Date_Certified'] || row['Date Certified'] || '').trim(),
-        olley_status: (row['Olley Certification Status'] || row['Olley Certification status'] || row['Olley_Certification_Status'] || row['Olley Cert Status'] || row['Olley certification status'] || '').trim(),
-        olley_cohort: olleyCohort,
-        olley_date:   (row['Olley Date Certified'] || row['Olley_Date_Certified'] || '').trim(),
-        lat: geo.lat, lng: geo.lng,
-        lifetimeSessions: sessions,
-      };
-    });
-
-  // Populate cohort and state dropdowns
-  const cohortSel = document.getElementById('cohort-filter');
-  [...cohortSet].sort((a,b) => parseFloat(a)-parseFloat(b)).forEach(c => {
-    const o = document.createElement('option'); o.value = c; o.textContent = 'Cohort ' + c;
-    cohortSel.appendChild(o);
+    return {
+      id:idx, fullName:full, first, last,
+      org:   (row['Organization']||'').trim(),
+      phone: fmtPhone((row['Phone']||'').trim()),
+      email: (row['Email']||'').trim(),
+      city, state,
+      trainerId:    (row['Trainer ID']||'').trim(),
+      ss_status:    ssStatus,
+      ss_cohort:    ssCohort,
+      ss_date:      (row['S/S Date Certified']||'').trim(),
+      olley_status: olleyStatus,
+      olley_cohort: olleyCohort,
+      olley_date:   (row['Olley Date Certified']||'').trim(),
+      lat:g.lat, lng:g.lng,
+      lifetimeSessions: sessions,
+    };
   });
 
-  const stateSel = document.getElementById('state-filter');
-  [...stateSet].sort().forEach(s => {
-    const o = document.createElement('option'); o.value = s; o.textContent = s;
-    stateSel.appendChild(o);
+  // Populate dropdowns
+  const cSel = document.getElementById('cohort-filter');
+  [...cohortSet].sort((a,b)=>parseFloat(a)-parseFloat(b)).forEach(c=>{
+    const o=document.createElement('option'); o.value=c; o.textContent='Cohort '+c; cSel.appendChild(o);
+  });
+  const sSel = document.getElementById('state-filter');
+  [...stateSet].sort().forEach(s=>{
+    const o=document.createElement('option'); o.value=s; o.textContent=s; sSel.appendChild(o);
   });
 
-  document.getElementById('loading-overlay').style.display = 'none';
+  document.getElementById('loading-overlay').style.display='none';
   render();
 }
 
 function getFiltered() {
   return trainers.filter(t => {
     const prog = programType(t);
+    if (filters.program==='ss'    && prog!=='ss')    return false;
+    if (filters.program==='olley' && prog!=='olley') return false;
+    if (filters.program==='both'  && prog!=='both')  return false;
 
-    // Program filter — checks correct cert column(s)
-    if (filters.program === 'ss' && prog !== 'ss') return false;
-    if (filters.program === 'olley' && prog !== 'olley') return false;
-    if (filters.program === 'both' && prog !== 'both') return false;
-
-    // Status filter — checks the relevant program's status
     if (filters.status !== 'all') {
-      let relevantStatus = '';
-      if (filters.program === 'olley') {
-        relevantStatus = t.olley_status;
-      } else {
-        relevantStatus = t.ss_status;
-      }
-      if (filters.status === 'not-active' && relevantStatus.toLowerCase() !== 'not active') return false;
-      if (filters.status === 'Full' && relevantStatus !== 'Full') return false;
-      if (filters.status === 'Provisional' && relevantStatus !== 'Provisional') return false;
+      const chk = filters.program==='olley' ? t.olley_status : t.ss_status;
+      if (filters.status==='not-active'  && chk.toLowerCase()!=='not active') return false;
+      if (filters.status==='Full'        && chk!=='Full') return false;
+      if (filters.status==='Provisional' && chk!=='Provisional') return false;
     }
 
-    // Cohort filter
-    if (filters.cohort !== 'all') {
-      if (t.ss_cohort !== filters.cohort && t.olley_cohort !== filters.cohort) return false;
-    }
-
-    // State filter
-    if (filters.state !== 'all' && t.state !== filters.state) return false;
-
-    // Search
+    if (filters.cohort!=='all' && t.ss_cohort!==filters.cohort && t.olley_cohort!==filters.cohort) return false;
+    if (filters.state!=='all'  && t.state!==filters.state) return false;
     if (filters.search) {
-      const q = filters.search.toLowerCase();
-      if (![t.fullName, t.city, t.org, t.state, t.trainerId].some(f => (f||'').toLowerCase().includes(q))) return false;
+      const q=filters.search.toLowerCase();
+      if (![t.fullName,t.city,t.org,t.state].some(f=>(f||'').toLowerCase().includes(q))) return false;
     }
-
     return true;
   });
 }
 
+const tooltip = document.getElementById('hover-tooltip');
+
 function render() {
   const filtered = getFiltered();
-  Object.values(markers).forEach(m => map.removeLayer(m));
+  Object.values(markers).forEach(m=>map.removeLayer(m));
   markers = {};
 
   filtered.forEach(t => {
+    const m = L.marker([t.lat,t.lng],{icon:pinIcon(t)});
     const prog = programType(t);
-    const m = L.marker([t.lat, t.lng], { icon: pinIcon(t) });
-
-    const salutation = t.salutation ? t.salutation + ' ' : '';
-    const displayName = t.fullName;
-    const emailHtml = t.email ? `<a href="mailto:${t.email}">${t.email}</a>` : '—';
-    const subject = encodeURIComponent(`Trainer Info Update – ${t.fullName}`);
-    const body = encodeURIComponent(`Hi,\n\nI'd like to update my Support Over Silence trainer info.\n\nName: ${t.fullName}\nTrainer ID: ${t.trainerId}\n\nWhat needs to change:\n[Please describe your updates here]\n\nThank you!`);
-    const updateLink = `<a href="mailto:info@supportoversilence.com?subject=${subject}&body=${body}" class="popup-update-link">✏ Update my info</a>`;
-
-    let certRows = '';
-    if (t.ss_status) certRows += `<div class="popup-row"><strong>S/S:</strong> ${t.ss_status}${t.ss_date ? ' · certified ' + t.ss_date : ''}</div>`;
-    if (t.olley_status) certRows += `<div class="popup-row"><strong>Olley:</strong> ${t.olley_status}${t.olley_date ? ' · certified ' + t.olley_date : ''}</div>`;
 
     m.bindPopup(`<div class="popup-inner">
-      <div class="popup-name">${displayName}</div>
+      <div class="popup-name">${t.fullName}</div>
       ${t.org ? `<div class="popup-row">${t.org}</div>` : ''}
-      <div class="popup-row">${t.city}${t.state ? ', ' + t.state : ''}</div>
-    </div>`, { maxWidth: 240 });
+      <div class="popup-row">${t.city}${t.state?', '+t.state:''}</div>
+    </div>`,{maxWidth:240});
 
-    m.on('click', () => selectTrainer(t.id, false));
-
-    // Hover tooltip — show name on mouseover
+    // Hover tooltip
     m.on('mouseover', function(e) {
-      const tooltip = document.getElementById('trainer-tooltip');
       tooltip.textContent = t.fullName;
-      const point = map.latLngToContainerPoint(e.latlng);
-      const mapEl = document.getElementById('map');
-      const rect = mapEl.getBoundingClientRect();
-      tooltip.style.left = (rect.left + point.x) + 'px';
-      tooltip.style.top  = (rect.top  + point.y - 32) + 'px';
-      tooltip.style.position = 'fixed';
-      tooltip.style.opacity = '1';
+      tooltip.style.display = 'block';
+      const pt = map.latLngToContainerPoint(e.latlng);
+      const rect = document.getElementById('map').getBoundingClientRect();
+      tooltip.style.left = (rect.left + pt.x) + 'px';
+      tooltip.style.top  = (rect.top  + pt.y - 36) + 'px';
     });
-    m.on('mouseout', function() {
-      document.getElementById('trainer-tooltip').style.opacity = '0';
-    });
+    m.on('mouseout', function() { tooltip.style.display='none'; });
+    m.on('click', () => selectTrainer(t.id, false));
 
     m.addTo(map);
     markers[t.id] = m;
@@ -564,94 +398,68 @@ function render() {
 
   const list = document.getElementById('trainer-list');
   list.innerHTML = '';
-  [...filtered].sort((a,b) => a.fullName.localeCompare(b.fullName)).forEach(t => {
+  [...filtered].sort((a,b)=>a.fullName.localeCompare(b.fullName)).forEach(t => {
     const prog = programType(t);
+    const mBadge = t.lifetimeSessions>=15 ? '<span class="badge badge-milestone">🌟 15+</span>' :
+                   t.lifetimeSessions>=10 ? '<span class="badge badge-milestone">⭐ 10+</span>' : '';
     const div = document.createElement('div');
-    div.className = 'trainer-card' + (t.id === selectedId ? ' selected' : '');
-    div.id = `card-${t.id}`;
-    const milestoneBadgeHtml = t.lifetimeSessions >= 15 ? '<span class="badge badge-milestone">🌟 15+ sessions</span>' :
-                               t.lifetimeSessions >= 10 ? '<span class="badge badge-milestone">⭐ 10+ sessions</span>' : '';
+    div.className = 'trainer-card'+(t.id===selectedId?' selected':'');
+    div.id = 'card-'+t.id;
     div.innerHTML = `
       <div class="tc-name">${t.fullName}</div>
-      ${t.org ? `<div class="tc-org">${t.org}</div>` : ''}
-      <div class="tc-location">${t.city}${t.state ? ', '+t.state : ''}</div>
-      ${t.phone ? `<div class="tc-org" style="color:#888;">${t.phone}</div>` : ''}
+      ${t.org?`<div class="tc-org">${t.org}</div>`:''}
+      <div class="tc-location">${t.city}${t.state?', '+t.state:''}</div>
+      ${t.phone?`<div class="tc-org" style="color:#888">${t.phone}</div>`:''}
       <div class="tc-badges">
-        ${programBadge(prog)}
-        ${t.ss_cohort ? `<span class="badge badge-cohort">Cohort ${t.ss_cohort}</span>` : ''}
-        ${certBadge(prog === 'olley' ? t.olley_status : t.ss_status)}
-        ${milestoneBadgeHtml}
+        ${progBadge(prog)}
+        ${t.ss_cohort?`<span class="badge badge-cohort">Cohort ${t.ss_cohort}</span>`:''}
+        ${certBadge(prog==='olley'?t.olley_status:t.ss_status)}
+        ${mBadge}
       </div>`;
-    div.addEventListener('click', () => selectTrainer(t.id, true));
+    div.addEventListener('click',()=>selectTrainer(t.id,true));
     list.appendChild(div);
   });
-
   document.getElementById('trainer-count').textContent = filtered.length;
 }
 
-function selectTrainer(id, pan) {
-  selectedId = id;
-  document.querySelectorAll('.trainer-card').forEach(c => c.classList.remove('selected'));
-  const card = document.getElementById(`card-${id}`);
-  if (card) { card.classList.add('selected'); card.scrollIntoView({ block: 'nearest' }); }
+function selectTrainer(id,pan) {
+  selectedId=id;
+  document.querySelectorAll('.trainer-card').forEach(c=>c.classList.remove('selected'));
+  const card=document.getElementById('card-'+id);
+  if (card) { card.classList.add('selected'); card.scrollIntoView({block:'nearest'}); }
   if (markers[id]) {
-    if (pan) { const t = trainers.find(x => x.id === id); map.setView([t.lat, t.lng], 11); }
+    if (pan) { const t=trainers.find(x=>x.id===id); map.setView([t.lat,t.lng],11); }
     markers[id].openPopup();
   }
 }
 
-// Filter controls
-document.querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const g = btn.dataset.filter;
-    document.querySelectorAll(`[data-filter="${g}"]`).forEach(b => b.classList.remove('active', 'ss', 'olley', 'both'));
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const g=btn.dataset.filter;
+    document.querySelectorAll(`[data-filter="${g}"]`).forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    if (g === 'program') btn.classList.add(btn.dataset.value);
-    filters[g] = btn.dataset.value;
+    filters[g]=btn.dataset.value;
     render();
   });
 });
-
-document.getElementById('cohort-filter').addEventListener('change', e => { filters.cohort = e.target.value; render(); });
-document.getElementById('state-filter').addEventListener('change', e => { filters.state = e.target.value; render(); });
-
-const searchBox = document.getElementById('search-box');
-const clearBtn  = document.getElementById('search-clear');
-searchBox.addEventListener('input', e => {
-  filters.search = e.target.value.trim();
-  clearBtn.style.display = filters.search ? 'block' : 'none';
-  render();
-});
-clearBtn.addEventListener('click', () => {
-  searchBox.value = ''; filters.search = ''; clearBtn.style.display = 'none'; searchBox.focus(); render();
-});
+document.getElementById('cohort-filter').addEventListener('change',e=>{filters.cohort=e.target.value;render();});
+document.getElementById('state-filter').addEventListener('change',e=>{filters.state=e.target.value;render();});
+const sb=document.getElementById('search-box'), sc=document.getElementById('search-clear');
+sb.addEventListener('input',e=>{filters.search=e.target.value.trim();sc.style.display=filters.search?'block':'none';render();});
+sc.addEventListener('click',()=>{sb.value='';filters.search='';sc.style.display='none';sb.focus();render();});
 
 function printDirectory() {
-  const filtered = getFiltered();
-  const progLabel = filters.program === 'all' ? 'All Programs' : filters.program.toUpperCase();
-  const statusLabel = filters.status === 'all' ? 'All Statuses' : filters.status === 'not-active' ? 'Not Active' : filters.status;
-  let ph = document.getElementById('print-header');
-  if (!ph) { ph = document.createElement('div'); ph.id = 'print-header'; ph.style.cssText = 'display:none'; document.body.insertBefore(ph, document.body.firstChild); }
-  ph.innerHTML = `<div style="background:#222b54;color:white;padding:12px 18px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-    <div style="font-size:1rem;font-weight:800;">Support Over Silence for KIDS — Certified Trainers Network</div>
-    <div style="font-size:0.78rem;opacity:0.8;margin-top:3px;">${progLabel} · ${statusLabel} · ${filtered.length} trainers</div>
-  </div>`;
-  const style = document.createElement('style');
-  style.id = 'print-inject';
-  style.textContent = '@media print { #print-header { display: block !important; } }';
-  document.head.appendChild(style);
+  const filtered=getFiltered();
+  let ph=document.getElementById('print-header');
+  if (!ph) { ph=document.createElement('div'); ph.id='print-header'; ph.style.cssText='display:none'; document.body.insertBefore(ph,document.body.firstChild); }
+  ph.innerHTML=`<div style="background:#222b54;color:white;padding:12px 18px;-webkit-print-color-adjust:exact;print-color-adjust:exact;"><div style="font-size:1rem;font-weight:800;">Support Over Silence — Certified Trainers Network</div><div style="font-size:0.78rem;opacity:0.8;margin-top:3px;">${filtered.length} trainers</div></div>`;
+  const s=document.createElement('style'); s.id='pi'; s.textContent='@media print{#print-header{display:block!important}}'; document.head.appendChild(s);
   window.print();
-  setTimeout(() => { const s = document.getElementById('print-inject'); if (s) s.remove(); }, 1000);
+  setTimeout(()=>{const x=document.getElementById('pi');if(x)x.remove();},1000);
 }
 
-// Load data
-loadData().catch(err => {
-  document.getElementById('loading-overlay').innerHTML = `
-    <div style="font-size:0.85rem;color:#c0392b;text-align:center;padding:20px;">
-      <strong>Could not load trainer data.</strong><br>
-      Please check your internet connection and try refreshing.<br>
-      <small style="color:#888;margin-top:8px;display:block;">${err.message}</small>
-    </div>`;
+loadData().catch(err=>{
+  document.getElementById('loading-overlay').innerHTML=`<div style="font-size:0.85rem;color:#c0392b;text-align:center;padding:20px;"><strong>Could not load trainer data.</strong><br>Please refresh or check your connection.<br><small style="color:#888;">${err.message}</small></div>`;
 });
 </script>
 </body>
