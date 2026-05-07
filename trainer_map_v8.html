@@ -376,8 +376,8 @@ async function loadData() {
 function getFiltered() {
   return trainers.filter(t => {
     const prog = programType(t);
-    if (filters.program==='ss'    && prog!=='ss')    return false;
-    if (filters.program==='olley' && prog!=='olley') return false;
+    if (filters.program==='ss'    && prog!=='ss'    && prog!=='both') return false;
+    if (filters.program==='olley' && prog!=='olley' && prog!=='both') return false;
     if (filters.program==='both'  && prog!=='both')  return false;
 
     if (filters.status !== 'all') {
