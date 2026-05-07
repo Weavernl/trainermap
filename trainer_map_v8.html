@@ -140,6 +140,7 @@ const SHEET_ID  = '1vMfqzcLq_cZzn7GTm3G2WFWlHOWwcMMpWyARvEY-xf0';
 const ROSTER_GID  = '184179872';
 const SUMMARY_GID = '1394624129';
 
+// Fallback city coords for trainers not yet geocoded in the sheet
 const CITY_COORDS = {
   'Des Peres_MO':[38.6031,-90.4329],'St. Louis_MO':[38.6270,-90.1994],
   'Florence_KY':[38.9984,-84.6266],'Louisville_KY':[38.2527,-85.7585],
@@ -154,12 +155,33 @@ const CITY_COORDS = {
   'Taylorsville_KY':[38.0320,-85.3441],'Brownsville_KY':[37.1948,-86.2683],
   'Bloomington_IL':[40.4842,-88.9937],'Normal_IL':[40.5142,-88.9906],
   'Erlanger_KY':[39.0165,-84.5996],'Newport_KY':[39.0917,-84.4960],
+  'West Olive_MI':[42.9242,-86.1580],'Holland_MI':[42.7875,-86.1089],
+  'Alexandria_KY':[38.9601,-84.3877],'Mayfield_KY':[36.7418,-88.6367],
+  'Hopkinsville_KY':[36.8656,-87.4886],'Maplewood_MO':[38.6133,-90.3265],
+  'Hazard_KY':[37.2495,-83.1932],'Hardin_KY':[36.7668,-88.3225],
 };
 
-function geo(city, state, idx) {
-  const jLat = (idx % 7 - 3) * 0.008, jLng = (idx % 5 - 2) * 0.010;
-  const c = CITY_COORDS[city + '_' + state];
-  return c ? { lat: c[0]+jLat, lng: c[1]+jLng } : { lat: 38.2527+jLat, lng: -85.7585+jLng };
+function getCoords(trainer, idx) {
+  const jLat = (idx % 7 - 3) * 0.008;
+  const jLng = (idx % 5 - 2) * 0.010;
+  // First priority: lat/lng from Google Sheet (cols T and U)
+  if (trainer.lat_sheet && trainer.lng_sheet) {
+    return { lat: trainer.lat_sheet + jLat, lng: trainer.lng_sheet + jLng };
+  }
+  // Second priority: hardcoded city list
+  const key = trainer.city + '_' + trainer.state;
+  if (CITY_COORDS[key]) {
+    return { lat: CITY_COORDS[key][0] + jLat, lng: CITY_COORDS[key][1] + jLng };
+  }
+  // Fallback: state center
+  const STATE_CENTERS = {
+    'KY':[37.8393,-84.2700],'IL':[40.6331,-89.3985],
+    'MO':[38.5739,-92.6038],'IN':[40.2672,-86.1349],
+    'OH':[40.4173,-82.9071],'MI':[44.3148,-85.6024],
+    'TN':[35.5175,-86.5804],'WV':[38.5976,-80.4549],
+  };
+  const sc = STATE_CENTERS[trainer.state] || [38.5,-85.5];
+  return { lat: sc[0] + jLat, lng: sc[1] + jLng };
 }
 
 function fmtPhone(p) {
@@ -242,7 +264,7 @@ function progBadge(p) {
 
 let trainers=[], filters={program:'all',status:'all',cohort:'all',state:'all',search:''}, selectedId=null, markers={};
 
-const map = L.map('map',{center:[38.6,-85.8],zoom:7});
+const map = L.map('map',{center:[39.5,-86.5],zoom:6});
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
   attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19
 }).addTo(map);
@@ -307,12 +329,14 @@ async function loadData() {
     if (ssCohort) cohortSet.add(ssCohort);
     if (olleyCohort&&olleyCohort!==ssCohort) cohortSet.add(olleyCohort);
 
-    const g = geo(city, state, idx);
     const sessions = sessionMap[full.replace(/\s+/g,' ').trim().toLowerCase()] || 0;
     // Debug first few trainers
     if (idx < 3) console.log(full, '→ sessions:', sessions);
 
-    return {
+    // Read lat/lng from sheet columns T and U if available
+    const latSheet  = parseFloat((row['Latitude']||'').trim()) || null;
+    const lngSheet  = parseFloat((row['Longitude']||'').trim()) || null;
+    const trainer = {
       id:idx, fullName:full, first, last,
       org:   (row['Organization']||'').trim(),
       phone: fmtPhone((row['Phone']||'').trim()),
@@ -325,9 +349,14 @@ async function loadData() {
       olley_status: olleyStatus,
       olley_cohort: olleyCohort,
       olley_date:   (row['Olley Date Certified']||'').trim(),
-      lat:g.lat, lng:g.lng,
+      lat_sheet: latSheet,
+      lng_sheet: lngSheet,
       lifetimeSessions: sessions,
     };
+    const coords = getCoords(trainer, idx);
+    trainer.lat = coords.lat;
+    trainer.lng = coords.lng;
+    return trainer;
   });
 
   // Populate dropdowns
