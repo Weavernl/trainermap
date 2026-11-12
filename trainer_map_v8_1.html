@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support Over Silence — Certified Trainers Network</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Lato', Arial, sans-serif; background: #f5f0e6; color: #222b54; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+#header { background: white; padding: 0 16px; height: 44px; display: flex; align-items: center; border-bottom: 1px solid #e0dbce; }
+#header h1 { font-size: 0.95rem; font-weight: 700; color: #222b54; }
+#controls { background: white; padding: 0; flex-shrink: 0; border-bottom: 2px solid #e0dbce; }
+#controls-row1 { display: flex; gap: 10px; align-items: center; padding: 6px 16px; flex-wrap: nowrap; border-bottom: 1px solid #f0ece4; }
+#controls-row2 { display: flex; gap: 10px; align-items: center; padding: 5px 16px; }
+.filter-group { display: flex; gap: 4px; align-items: center; }
+.filter-label { color: #888; font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 2px; white-space: nowrap; }
+.filter-btn { background: transparent; border: 1.5px solid #ccc; color: #555; border-radius: 14px; padding: 3px 10px; font-size: 0.68rem; cursor: pointer; transition: all 0.15s; font-family: 'Lato', Arial, sans-serif; white-space: nowrap; }
+.filter-btn:hover { border-color: #fdb813; color: #222b54; }
+.filter-btn.active { background: #fdb813; border-color: #fdb813; color: #222b54; font-weight: 700; }
+.filter-select { background: transparent; border: 1.5px solid #ccc; color: #555; border-radius: 14px; padding: 3px 10px; font-size: 0.68rem; cursor: pointer; font-family: 'Lato', Arial, sans-serif; }
+.filter-select:focus { outline: none; border-color: #fdb813; }
+#search-wrap { margin-left: auto; position: relative; display: flex; align-items: center; }
+#search-box { background: #f5f5f5; border: 1.5px solid #ccc; border-radius: 14px; padding: 3px 28px 3px 12px; color: #222b54; font-size: 0.68rem; width: 160px; font-family: 'Lato', Arial, sans-serif; }
+#search-box:focus { outline: none; border-color: #fdb813; background: white; }
+#search-clear { position: absolute; right: 8px; background: none; border: none; color: #aaa; cursor: pointer; font-size: 0.85rem; display: none; }
+#legend { display: flex; gap: 10px; align-items: center; padding: 5px 16px; background: white; border-bottom: 1px solid #e0dbce; flex-wrap: wrap; font-size: 0.65rem; color: #555; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+#main { display: flex; flex: 1; overflow: hidden; }
+#map { flex: 1; position: relative; }
+#sidebar { width: 270px; background: white; display: flex; flex-direction: column; border-left: 1px solid #ddd; flex-shrink: 0; }
+#sidebar-header { background: #222b54; color: white; padding: 8px 13px; font-size: 0.75rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+#trainer-count { color: #fdb813; font-size: 0.85rem; }
+#print-btn { background: #0ba5a5; border: none; border-radius: 10px; color: white; font-size: 0.65rem; font-weight: 700; padding: 3px 9px; cursor: pointer; }
+#trainer-list { overflow-y: auto; flex: 1; }
+.trainer-card { padding: 6px 10px; border-bottom: 1px solid #f2efe8; cursor: pointer; transition: background 0.1s; }
+.trainer-card:hover { background: #faf8f4; }
+.trainer-card.selected { background: #e6f4f4; border-left: 3px solid #0ba5a5; padding-left: 9px; }
+.tc-name { font-weight: 700; font-size: 0.78rem; color: #222b54; }
+.tc-location { font-size: 0.67rem; color: #888; margin-top: 1px; }
+.tc-org { font-size: 0.65rem; color: #0ba5a5; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tc-badges { display: flex; gap: 3px; margin-top: 3px; flex-wrap: wrap; }
+.badge { font-size: 0.61rem; padding: 1px 7px; border-radius: 10px; font-weight: 600; line-height: 1.6; }
+.badge-cohort { background: #ebe8f5; color: #4a3580; }
+.badge-full { background: #d8f0dd; color: #1a6632; }
+.badge-prov { background: #fef3cd; color: #7a5700; }
+.badge-inactive { background: #e8e8ea; color: #555; }
+.badge-ss { background: #e8eaf6; color: #222b54; }
+.badge-olley { background: #e0f7f7; color: #0b8a8a; }
+.badge-both { background: #fff8e1; color: #b8860b; }
+.badge-milestone { background: #fff3cd; color: #856404; }
+#loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 12px; }
+.spinner { width: 36px; height: 36px; border: 4px solid #e0dbce; border-top: 4px solid #222b54; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.leaflet-popup-content-wrapper { border-radius: 8px; box-shadow: 0 3px 16px rgba(0,0,0,0.15); padding: 0; overflow: hidden; }
+.leaflet-popup-content { margin: 0; }
+.popup-inner { padding: 12px 14px; min-width: 160px; }
+.popup-name { font-weight: 800; font-size: 0.92rem; color: #222b54; margin-bottom: 3px; }
+.popup-row { font-size: 0.77rem; margin-bottom: 2px; color: #444; }
+#hover-tooltip { position: fixed; background: #222b54; color: white; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; pointer-events: none; z-index: 99999; display: none; transform: translate(-50%, -100%); margin-top: -8px; font-family: 'Lato', Arial, sans-serif; }
+#hover-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #222b54; }
+@media print {
+  body { overflow: visible; height: auto; }
+  #header, #controls, #legend, #map, #print-btn, #loading-overlay, #hover-tooltip { display: none !important; }
+  #main { display: block; }
+  #sidebar { width: 100%; border: none; display: block; }
+  #sidebar-header { background: #222b54 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #trainer-list { overflow: visible; }
+  .trainer-card { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div id="header"><h1>Support Over Silence — Certified Trainers Network</h1></div>
+<div id="controls">
+  <div id="controls-row1">
+    <div class="filter-group">
+      <span class="filter-label">Program:</span>
+      <button class="filter-btn active" data-filter="program" data-value="all">All</button>
+      <button class="filter-btn" data-filter="program" data-value="ss">S/S</button>
+      <button class="filter-btn" data-filter="program" data-value="olley">Olley</button>
+      <button class="filter-btn" data-filter="program" data-value="both">Both</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Status:</span>
+      <button class="filter-btn active" data-filter="status" data-value="all">All</button>
+      <button class="filter-btn" data-filter="status" data-value="Full">Full</button>
+      <button class="filter-btn" data-filter="status" data-value="Provisional">Provisional</button>
+      <button class="filter-btn" data-filter="status" data-value="not-active">Not Active</button>
+    </div>
+    <div id="search-wrap">
+      <input type="text" id="search-box" placeholder="Search name, city, org…">
+      <button id="search-clear">✕</button>
+    </div>
+  </div>
+  <div id="controls-row2">
+    <div class="filter-group">
+      <span class="filter-label">Cohort:</span>
+      <select id="cohort-filter" class="filter-select"><option value="all">All cohorts</option></select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">State:</span>
+      <select id="state-filter" class="filter-select"><option value="all">All states</option></select>
+    </div>
+  </div>
+</div>
+<div id="legend">
+  <span style="font-weight:700;font-size:0.7rem;color:#444;">Pin colors:</span>
+  <div class="legend-item"><span class="legend-dot" style="background:#222b54"></span> S/S certified</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#0ba5a5"></span> Olley certified</div>
+  <div class="legend-item"><span class="legend-dot" style="background:#fdb813"></span> Both programs</div>
+  <span style="margin-left:8px;font-weight:700;font-size:0.7rem;color:#444;">Milestones:</span>
+  <div class="legend-item">⭐ 10+ sessions</div>
+  <div class="legend-item">🌟 15+ sessions</div>
+</div>
+<div id="main">
+  <div id="map">
+    <div id="loading-overlay">
+      <div class="spinner"></div>
+      <div style="font-size:0.85rem;color:#555;">Loading trainer data…</div>
+    </div>
+  </div>
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span>Directory</span><span id="trainer-count">—</span>
+      </div>
+      <button id="print-btn" onclick="printDirectory()">⬇ Download / Print</button>
+    </div>
+    <div id="trainer-list"></div>
+  </div>
+</div>
+<div id="hover-tooltip"></div>
+
+<script>
+const SHEET_ID  = '1vMfqzcLq_cZzn7GTm3G2WFWlHOWwcMMpWyARvEY-xf0';
+const ROSTER_GID  = '184179872';
+const SUMMARY_GID = '1394624129';
+
+// Fallback city coords for trainers not yet geocoded in the sheet
+const CITY_COORDS = {
+  'Des Peres_MO':[38.6031,-90.4329],'St. Louis_MO':[38.6270,-90.1994],
+  'Florence_KY':[38.9984,-84.6266],'Louisville_KY':[38.2527,-85.7585],
+  'Lexington_KY':[38.0406,-84.5037],'Versailles_KY':[38.0517,-84.7299],
+  'Bowling Green_KY':[36.9685,-86.4808],'Frankfort_KY':[38.2009,-84.8733],
+  'Shelbyville_KY':[38.2126,-85.2269],'Richmond_KY':[37.7479,-84.2947],
+  'Danville_KY':[37.6459,-84.7721],'Elizabethtown_KY':[37.6987,-85.8591],
+  'Somerset_KY':[37.0920,-84.6041],'Cadiz_KY':[36.8651,-87.8348],
+  'Owensboro_KY':[37.7719,-87.1111],'Corbin_KY':[36.9495,-84.0966],
+  'Benton_KY':[36.8578,-88.3503],'Crittenden_KY':[38.7823,-84.5999],
+  'Carrollton_KY':[38.6817,-85.1758],'Independence_KY':[38.9432,-84.5444],
+  'Taylorsville_KY':[38.0320,-85.3441],'Brownsville_KY':[37.1948,-86.2683],
+  'Bloomington_IL':[40.4842,-88.9937],'Normal_IL':[40.5142,-88.9906],
+  'Erlanger_KY':[39.0165,-84.5996],'Newport_KY':[39.0917,-84.4960],
+  'West Olive_MI':[42.9242,-86.1580],'Holland_MI':[42.7875,-86.1089],
+  'Alexandria_KY':[38.9601,-84.3877],'Mayfield_KY':[36.7418,-88.6367],
+  'Hopkinsville_KY':[36.8656,-87.4886],'Maplewood_MO':[38.6133,-90.3265],
+  'Hazard_KY':[37.2495,-83.1932],'Hardin_KY':[36.7668,-88.3225],
+};
+
+function getCoords(trainer, idx) {
+  const jLat = (idx % 7 - 3) * 0.008;
+  const jLng = (idx % 5 - 2) * 0.010;
+  // First priority: lat/lng from Google Sheet (cols T and U)
+  if (trainer.lat_sheet && trainer.lng_sheet) {
+    return { lat: trainer.lat_sheet + jLat, lng: trainer.lng_sheet + jLng };
+  }
+  // Second priority: hardcoded city list
+  const key = trainer.city + '_' + trainer.state;
+  if (CITY_COORDS[key]) {
+    return { lat: CITY_COORDS[key][0] + jLat, lng: CITY_COORDS[key][1] + jLng };
+  }
+  // Fallback: state center
+  const STATE_CENTERS = {
+    'KY':[37.8393,-84.2700],'IL':[40.6331,-89.3985],
+    'MO':[38.5739,-92.6038],'IN':[40.2672,-86.1349],
+    'OH':[40.4173,-82.9071],'MI':[44.3148,-85.6024],
+    'TN':[35.5175,-86.5804],'WV':[38.5976,-80.4549],
+  };
+  const sc = STATE_CENTERS[trainer.state] || [38.5,-85.5];
+  return { lat: sc[0] + jLat, lng: sc[1] + jLng };
+}
+
+function fmtPhone(p) {
+  if (!p) return '';
+  const d = p.replace(/\D/g,'');
+  if (d.length===10) return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);
+  if (d.length===11&&d[0]==='1') return d.slice(1,4)+'-'+d.slice(4,7)+'-'+d.slice(7);
+  return p;
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = splitLine(lines[0]);
+  return lines.slice(1).filter(l=>l.trim()).map(line => {
+    const vals = splitLine(line), obj = {};
+    headers.forEach((h,i) => obj[h.trim()] = (vals[i]||'').trim());
+    return obj;
+  });
+}
+
+function splitLine(line) {
+  const vals=[]; let cur='', inQ=false;
+  for (const c of line) {
+    if (c==='"') inQ=!inQ;
+    else if (c===','&&!inQ) { vals.push(cur); cur=''; }
+    else cur+=c;
+  }
+  vals.push(cur);
+  return vals;
+}
+
+function programType(t) {
+  const ss    = (t.ss_status||'').trim().toLowerCase();
+  const olley = (t.olley_status||'').trim().toLowerCase();
+  const hasSS    = ss !== '' && ss !== 'not active';
+  const hasOlley = olley !== '' && olley !== 'not active';
+  if (hasSS && hasOlley) return 'both';
+  if (hasOlley) return 'olley';
+  return 'ss';
+}
+
+function pinIcon(t) {
+  const prog = programType(t);
+  const n = t.lifetimeSessions || 0;
+
+  // Body color
+  let body = '#222b54';
+  if (prog === 'olley') body = '#0ba5a5';
+  if (prog === 'both')  body = '#fdb813';
+
+  // Center dot color
+  let dot = prog === 'both' ? '#222b54' : prog === 'olley' ? '#ffffff' : '#fdb813';
+
+  // Plain dot only — no rings, no milestone indicators on the pin itself
+  const inner = `<circle cx="11" cy="11" r="3.5" fill="${dot}"/>`;
+
+  return L.divIcon({
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="32" viewBox="0 0 22 32">
+      <path d="M11 0C5.48 0 1 4.48 1 10c0 7.75 10 22 10 22S21 17.75 21 10C21 4.48 16.52 0 11 0z" fill="${body}" stroke="white" stroke-width="1.5"/>
+      ${inner}
+    </svg>`,
+    className:'', iconSize:[22,32], iconAnchor:[11,32], popupAnchor:[0,-32]
+  });
+}
+
+function certBadge(s) {
+  if (!s) return '';
+  const l = s.toLowerCase();
+  if (l==='full') return '<span class="badge badge-full">Full</span>';
+  if (l==='provisional') return '<span class="badge badge-prov">Provisional</span>';
+  if (l==='not active') return '<span class="badge badge-inactive">Not Active</span>';
+  return '';
+}
+
+function progBadge(p) {
+  if (p==='both')  return '<span class="badge badge-both">S/S + Olley</span>';
+  if (p==='olley') return '<span class="badge badge-olley">Olley</span>';
+  return '<span class="badge badge-ss">S/S</span>';
+}
+
+let trainers=[], filters={program:'all',status:'all',cohort:'all',state:'all',search:''}, selectedId=null, markers={};
+
+const map = L.map('map',{center:[39.5,-86.5],zoom:6});
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'&copy; OpenStreetMap contributors', maxZoom:19
+}).addTo(map);
+fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+  .then(r=>r.json()).then(d=>L.geoJSON(d,{style:{color:'#7a8bbf',weight:1.2,fillOpacity:0}}).addTo(map)).catch(()=>{});
+
+async function fetchCSV(gid) {
+  const urls = [
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}`,
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/pub?gid=${gid}&single=true&output=csv`,
+  ];
+  for (const url of urls) {
+    try {
+      const r = await fetch(url);
+      if (r.ok) { const t = await r.text(); if (t.length>50 && !t.includes('<!DOCTYPE')) return t; }
+    } catch {}
+  }
+  throw new Error('Load failed');
+}
+
+async function loadData() {
+  const [rosterText, summaryText] = await Promise.all([
+    fetchCSV(ROSTER_GID),
+    fetchCSV(SUMMARY_GID).catch(()=>''),
+  ]);
+
+  // Build session count map from summary: col B (Prior Years Lead) + col C (Prior Years Co) + col AD (YTD Total)
+  const sessionMap = {};
+  if (summaryText) {
+    parseCSV(summaryText).forEach(row => {
+      const name = (row['Trainer']||'').replace(/\s+/g,' ').trim().toLowerCase();
+      if (!name) return;
+      const b = parseFloat(row['Prior Years (Lead)']||0)||0;
+      const c = parseFloat(row['Prior Years (Co)']||0)||0;
+      const ad = parseFloat(row['YTD Total']||0)||0;
+      sessionMap[name] = b + c + ad;
+      if (b+c+ad > 0) console.log('Sessions found:', name, '=', b+c+ad);
+    });
+  }
+
+  const cohortSet=new Set(), stateSet=new Set();
+  const rosterRows = parseCSV(rosterText);
+  console.log('Roster columns:', Object.keys(rosterRows[0]||{}).join(' | '));
+  // Debug: find Bailee and log her exact values
+  const bailee = rosterRows.find(r => (r['Trainer First Name']||'').includes('Bailee') || (r['Trainer Last Name']||'').includes('Hubert'));
+  if (bailee) {
+    console.log('Bailee raw data:', JSON.stringify(bailee));
+  }
+
+  trainers = rosterRows.filter(r=>(r['Trainer First Name']||'').trim()).map((row,idx) => {
+    const first = (row['Trainer First Name']||'').trim();
+    const last  = (row['Trainer Last Name']||'').trim();
+    const full  = (first+' '+last).trim();
+    const city  = (row['City']||'').trim();
+    const state = (row['State']||'').trim();
+    const ssCohort    = (row['S/S Cohort']||'').toString().trim();
+    const olleyCohort = (row['Olley Cohort']||'').toString().trim();
+    const ssStatus    = (row['S/S Certification status']||'').trim();
+    const olleyStatus = (row['Olley Certification Status']||row['Olley Certification status']||'').trim();
+
+    if (city&&state) stateSet.add(state);
+    if (ssCohort) cohortSet.add(ssCohort);
+    if (olleyCohort&&olleyCohort!==ssCohort) cohortSet.add(olleyCohort);
+
+    const sessions = sessionMap[full.replace(/\s+/g,' ').trim().toLowerCase()] || 0;
+    // Debug first few trainers
+    if (idx < 3) console.log(full, '→ sessions:', sessions);
+
+    // Read lat/lng from sheet columns T and U if available
+    const latSheet  = parseFloat((row['Latitude']||'').trim()) || null;
+    const lngSheet  = parseFloat((row['Longitude']||'').trim()) || null;
+    const trainer = {
+      id:idx, fullName:full, first, last,
+      org:   (row['Organization']||'').trim(),
+      phone: fmtPhone((row['Phone']||'').trim()),
+      email: (row['Email']||'').trim(),
+      city, state,
+      trainerId:    (row['Trainer ID']||'').trim(),
+      ss_status:    ssStatus,
+      ss_cohort:    ssCohort,
+      ss_date:      (row['S/S Date Certified']||'').trim(),
+      olley_status: olleyStatus,
+      olley_cohort: olleyCohort,
+      olley_date:   (row['Olley Date Certified']||'').trim(),
+      lat_sheet: latSheet,
+      lng_sheet: lngSheet,
+      lifetimeSessions: sessions,
+    };
+    const coords = getCoords(trainer, idx);
+    trainer.lat = coords.lat;
+    trainer.lng = coords.lng;
+    return trainer;
+  });
+
+  // Populate dropdowns
+  const cSel = document.getElementById('cohort-filter');
+  [...cohortSet].sort((a,b)=>parseFloat(a)-parseFloat(b)).forEach(c=>{
+    const o=document.createElement('option'); o.value=c; o.textContent='Cohort '+c; cSel.appendChild(o);
+  });
+  const sSel = document.getElementById('state-filter');
+  [...stateSet].sort().forEach(s=>{
+    const o=document.createElement('option'); o.value=s; o.textContent=s; sSel.appendChild(o);
+  });
+
+  document.getElementById('loading-overlay').style.display='none';
+  render();
+}
+
+function getFiltered() {
+  return trainers.filter(t => {
+    const prog = programType(t);
+    if (filters.program==='ss'    && prog!=='ss'    && prog!=='both') return false;
+    if (filters.program==='olley' && prog!=='olley' && prog!=='both') return false;
+    if (filters.program==='both'  && prog!=='both')  return false;
+
+    if (filters.status !== 'all') {
+      const chk = filters.program==='olley' ? t.olley_status : t.ss_status;
+      if (filters.status==='not-active'  && chk.toLowerCase()!=='not active') return false;
+      if (filters.status==='Full'        && chk!=='Full') return false;
+      if (filters.status==='Provisional' && chk!=='Provisional') return false;
+    }
+
+    if (filters.cohort!=='all' && t.ss_cohort!==filters.cohort && t.olley_cohort!==filters.cohort) return false;
+    if (filters.state!=='all'  && t.state!==filters.state) return false;
+    if (filters.search) {
+      const q=filters.search.toLowerCase();
+      if (![t.fullName,t.city,t.org,t.state].some(f=>(f||'').toLowerCase().includes(q))) return false;
+    }
+    return true;
+  });
+}
+
+const tooltip = document.getElementById('hover-tooltip');
+
+function render() {
+  const filtered = getFiltered();
+  Object.values(markers).forEach(m=>map.removeLayer(m));
+  markers = {};
+
+  filtered.forEach(t => {
+    const m = L.marker([t.lat,t.lng],{icon:pinIcon(t)});
+    const prog = programType(t);
+
+    m.bindPopup(`<div class="popup-inner">
+      <div class="popup-name">${t.fullName}${t.lifetimeSessions >= 15 ? ' 🌟' : t.lifetimeSessions >= 10 ? ' ⭐' : ''}</div>
+      ${t.org ? `<div class="popup-row">${t.org}</div>` : ''}
+      <div class="popup-row">${t.city}${t.state?', '+t.state:''}</div>
+    </div>`,{maxWidth:240});
+
+    // Hover tooltip
+    m.on('mouseover', function(e) {
+      const star = t.lifetimeSessions >= 15 ? ' 🌟' : t.lifetimeSessions >= 10 ? ' ⭐' : '';
+      tooltip.textContent = t.fullName + star;
+      tooltip.style.display = 'block';
+      const pt = map.latLngToContainerPoint(e.latlng);
+      const rect = document.getElementById('map').getBoundingClientRect();
+      tooltip.style.left = (rect.left + pt.x) + 'px';
+      tooltip.style.top  = (rect.top  + pt.y - 36) + 'px';
+    });
+    m.on('mouseout', function() { tooltip.style.display='none'; });
+    m.on('click', () => selectTrainer(t.id, false));
+
+    m.addTo(map);
+    markers[t.id] = m;
+  });
+
+  const list = document.getElementById('trainer-list');
+  list.innerHTML = '';
+  [...filtered].sort((a,b)=>a.fullName.localeCompare(b.fullName)).forEach(t => {
+    const prog = programType(t);
+    const mBadge = t.lifetimeSessions>=15 ? '<span class="badge badge-milestone">🌟 15+</span>' :
+                   t.lifetimeSessions>=10 ? '<span class="badge badge-milestone">⭐ 10+</span>' : '';
+    const div = document.createElement('div');
+    div.className = 'trainer-card'+(t.id===selectedId?' selected':'');
+    div.id = 'card-'+t.id;
+    const nameStar = t.lifetimeSessions >= 15 ? ' 🌟' : t.lifetimeSessions >= 10 ? ' ⭐' : '';
+    div.innerHTML = `
+      <div class="tc-name">${t.fullName}${nameStar}</div>
+      ${t.org?`<div class="tc-org">${t.org}</div>`:''}
+      <div class="tc-location">${t.city}${t.state?', '+t.state:''}</div>
+      ${t.phone?`<div class="tc-org" style="color:#888">${t.phone}</div>`:''}
+      <div class="tc-badges">
+        ${progBadge(prog)}
+        ${t.ss_cohort?`<span class="badge badge-cohort">Cohort ${t.ss_cohort}</span>`:''}
+        ${certBadge(prog==='olley'?t.olley_status:t.ss_status)}
+        ${mBadge}
+      </div>`;
+    div.addEventListener('click',()=>selectTrainer(t.id,true));
+    list.appendChild(div);
+  });
+  document.getElementById('trainer-count').textContent = filtered.length;
+}
+
+function selectTrainer(id,pan) {
+  selectedId=id;
+  document.querySelectorAll('.trainer-card').forEach(c=>c.classList.remove('selected'));
+  const card=document.getElementById('card-'+id);
+  if (card) { card.classList.add('selected'); card.scrollIntoView({block:'nearest'}); }
+  if (markers[id]) {
+    if (pan) { const t=trainers.find(x=>x.id===id); map.setView([t.lat,t.lng],11); }
+    markers[id].openPopup();
+  }
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const g=btn.dataset.filter;
+    document.querySelectorAll(`[data-filter="${g}"]`).forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    filters[g]=btn.dataset.value;
+    render();
+  });
+});
+document.getElementById('cohort-filter').addEventListener('change',e=>{filters.cohort=e.target.value;render();});
+document.getElementById('state-filter').addEventListener('change',e=>{filters.state=e.target.value;render();});
+const sb=document.getElementById('search-box'), sc=document.getElementById('search-clear');
+sb.addEventListener('input',e=>{filters.search=e.target.value.trim();sc.style.display=filters.search?'block':'none';render();});
+sc.addEventListener('click',()=>{sb.value='';filters.search='';sc.style.display='none';sb.focus();render();});
+
+function printDirectory() {
+  const filtered=getFiltered();
+  let ph=document.getElementById('print-header');
+  if (!ph) { ph=document.createElement('div'); ph.id='print-header'; ph.style.cssText='display:none'; document.body.insertBefore(ph,document.body.firstChild); }
+  ph.innerHTML=`<div style="background:#222b54;color:white;padding:12px 18px;-webkit-print-color-adjust:exact;print-color-adjust:exact;"><div style="font-size:1rem;font-weight:800;">Support Over Silence — Certified Trainers Network</div><div style="font-size:0.78rem;opacity:0.8;margin-top:3px;">${filtered.length} trainers</div></div>`;
+  const s=document.createElement('style'); s.id='pi'; s.textContent='@media print{#print-header{display:block!important}}'; document.head.appendChild(s);
+  window.print();
+  setTimeout(()=>{const x=document.getElementById('pi');if(x)x.remove();},1000);
+}
+
+loadData().catch(err=>{
+  document.getElementById('loading-overlay').innerHTML=`<div style="font-size:0.85rem;color:#c0392b;text-align:center;padding:20px;"><strong>Could not load trainer data.</strong><br>Please refresh or check your connection.<br><small style="color:#888;">${err.message}</small></div>`;
+});
+</script>
+</body>
+</html>
